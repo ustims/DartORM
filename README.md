@@ -21,16 +21,20 @@ Classes and fields can be annotated like this
 import 'package:dart_orm/annotations.dart';
 
 @DBTable()
-class User extends ORMModel { // every DartORM class should extend ORMModel
-  @DBField() // Every field that needs to be stored in database should be annotated with @DBField
+// every DartORM class should extend ORMModel
+class User extends ORMModel {
+  // Every field that needs to be stored in database should be annotated with @DBField
+  @DBField()
   @DBFieldPrimaryKey()
-  @DBFieldType('SERIAL') // Database field type can be overridden to database-engine specific type
+  // Database field type can be overridden to database-engine specific type
+  @DBFieldType('SERIAL')
   int id;
 
   @DBField()
   String givenName;
 
-  @DBField('family_name') // Database field name can be provided
+  // Database field name can be provided
+  @DBField('family_name')
   String familyName;
 }
 ```
@@ -39,7 +43,9 @@ Inserts and updates
 -------------------
 
 Every ORMModel has .save() method which will update/insert new row.
+
 If class instance has 'id' field with not-null value, .save() will execute 'UPDATE' statement with 'WHERE id = $id'.
+
 If class instance has null 'id' field, 'INSERT' statement will be executed.
 
 ```dart
@@ -56,11 +62,14 @@ Finding records
 ---------------
 
 Package dart_orm/orm.dart has two classes for finding records: Find and FindOne.
-Constructors receives a class that extends ORMMModel.
+
+Constructors receives a class that extends ORMModel.
 
 ```dart
-import 'package:dart_orm/orm.dart'; // Find and FindOne classes are here
-import 'package:dart_orm/sql.dart'; // Sql construction helpers such as EqualsSQL are here
+// Find and FindOne classes are here
+import 'package:dart_orm/orm.dart';
+// Sql construction helpers such as EqualsSQL are here
+import 'package:dart_orm/sql.dart';
 
 Find f = new Find(User)
   ..where(new LowerThanSQL('id', 3)
