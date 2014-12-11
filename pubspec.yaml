@@ -3,3 +3,4 @@ version: 0.0.1
 description: >
   Easy-to-use and easy-to-setup database ORM for dart.
 author: Ustimenko Sergey <ustims@gmail.com>
+homepage: https://github.com/ustims/DartORM
