@@ -1,9 +1,12 @@
-import '../lib/annotations.dart';
-import '../lib/orm.dart';
-import '../lib/sql.dart';
+
+import 'package:dart_orm/annotations.dart';
+import 'package:dart_orm/orm.dart';
+import 'package:dart_orm/sql.dart';
+
+import 'package:postgresql/postgresql.dart';
 
 @DBTable()
-class User extends ORMModel {
+class SomeUser extends OrmModel {
   @DBField()
   @DBFieldPrimaryKey()
   @DBFieldType('SERIAL')
@@ -25,14 +28,15 @@ void main(){
   var uri = 'postgres://dart_test:dart_test@localhost:5432/dart_test';
   connect(uri).then((conn) {
     // orm initialization
-    ORMModel.setConnection(conn);
+    OrmModel.setConnection(conn);
     // this will try to select current
     // schema version from database, and if it is empty -
     // create all the tables for found classes annotated with @DBTable
-    ORMModel.migrate();
-
+    return OrmModel.migrate();
+  })
+  .then((migrationResult) {
     // lets try to save some user
-    User u = new User();
+    SomeUser u = new SomeUser();
     u.givenName = 'Sergey';
     u.familyName = 'Ustimenko';
 
@@ -42,16 +46,17 @@ void main(){
     assert(saveResult > 0);
 
     // lets try simple one-row select by id
-    var f = new FindOne(User)
-    .whereEquals('id', 1); // whereEquals is just a shortcut for .where(new EqualsSQL('id', 1))
+    FindOne f = new FindOne(SomeUser)
+      ..whereEquals('id', 1); // whereEquals is just a shortcut for .where(new EqualsSQL('id', 1))
+
     return f.execute();
   })
-  .then((User user) {
+  .then((SomeUser user) {
     assert(user.id == 1);
     assert(user.givenName == 'Sergey');
 
     // now lets try something not so simple
-    Find f = new Find(User)
+    Find f = new Find(SomeUser)
       ..where(new LowerThanSQL('id', 3)
         .and(new EqualsSQL('givenName', 'Sergey')
           .or(new EqualsSQL('familyName', 'Ustimenko'))
@@ -59,6 +64,8 @@ void main(){
       )
       ..orderBy('id', 'DESC')
       ..limit(10);
+
+    print(f.toSql());
 
     return f.execute();
   })
@@ -68,7 +75,7 @@ void main(){
   })
   .catchError((err) {
     print("Error!");
-    print(err);
+    throw err;
   });
 
 }

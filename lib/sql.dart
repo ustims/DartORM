@@ -35,6 +35,33 @@ class SQL {
 
     return preparedSql;
   }
+
+  static String camelCaseToUnderscore(String camelCase){
+    String result = '';
+    int charNumber = 0;
+    bool prevCharWasUpper = false;
+    for(int char in camelCase.codeUnits){
+      String c = new String.fromCharCode(char);
+      bool isUpper = c == c.toUpperCase();
+
+      if(isUpper && charNumber > 0 && !prevCharWasUpper){
+        result += '_' + c.toLowerCase();
+        prevCharWasUpper = true;
+      }
+      else{
+        result += c.toLowerCase();
+        if(charNumber > 0 && !isUpper){
+          prevCharWasUpper = false;
+        }
+        else{
+          prevCharWasUpper = true;
+        }
+
+      }
+      charNumber++;
+    }
+    return result;
+  }
 }
 
 class ConditionSQL {
@@ -282,7 +309,18 @@ class DBFieldSQL {
   bool _isPrimaryKey = false;
   bool _isUnique = false;
   String _type;
-  String _name;
+
+  /**
+   * Database field name.
+   * This field is converted from _propertyName to underscore notation.
+   */
+  String _fieldName;
+
+  /**
+   * Model property name.
+   */
+  String _propertyName;
+
   dynamic _defaultValue;
   Symbol _constructedFromPropertyName;
 
@@ -304,10 +342,16 @@ class DBFieldSQL {
     _type = type;
   }
 
-  String get name => _name;
+  String get fieldName => _fieldName;
 
-  void set name(String name) {
-    _name = name;
+  void set fieldName(String name) {
+    _fieldName = name;
+  }
+
+  String get propertyName => _propertyName;
+  void set propertyName(String propertyName){
+    _propertyName = propertyName;
+    _fieldName = SQL.camelCaseToUnderscore(propertyName);
   }
 
   dynamic get defaultValue => _defaultValue;
@@ -323,7 +367,7 @@ class DBFieldSQL {
   }
 
   String toSql() {
-    String fieldDefinition = _name + ' ' + _type;
+    String fieldDefinition = _fieldName + ' ' + _type;
 
     if (_isPrimaryKey) {
       fieldDefinition += ' PRIMARY KEY';
@@ -342,14 +386,28 @@ class DBFieldSQL {
 }
 
 class DBTableSQL {
-  String _name;
+  /**
+   * Model class name.
+   */
+  String _className;
+
+  /**
+   * Database table name. Converted from _className to underscore notation.
+   */
+  String _tableName;
 
   List<DBFieldSQL> _fields = new List<DBFieldSQL>();
 
-  String get name => _name;
+  String get className => _className;
+  void set className(String className){
+    _className = className;
+    _tableName = SQL.camelCaseToUnderscore(className);
+  }
 
-  void set name(String name) {
-    _name = name;
+  String get tableName => _tableName;
+
+  void set tableName(String name) {
+    _tableName = name;
   }
 
   List<DBFieldSQL> get fields => _fields;
@@ -359,7 +417,7 @@ class DBTableSQL {
   }
 
   String toSql() {
-    String tableName = _name;
+    String tableName = _tableName;
     String sql = 'CREATE TABLE $tableName (';
 
     List<String> fieldDefinitions = new List<String>();

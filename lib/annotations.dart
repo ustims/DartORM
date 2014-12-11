@@ -5,11 +5,15 @@ import 'orm.dart';
 class DBTable {
   final String _dbTableName;
   const DBTable([String this._dbTableName]);
+
+  String get name => _dbTableName;
 }
 
 class DBField {
   final String _dbFieldName;
   const DBField([String this._dbFieldName]);
+
+  String get name => _dbFieldName;
 }
 
 class DBFieldPrimaryKey {
@@ -20,12 +24,16 @@ class DBFieldType {
   final String _type;
 
   const DBFieldType(String this._type);
+
+  String get type => _type;
 }
 
 class DBFieldDefault {
   final dynamic _defaultValue;
 
   const DBFieldDefault(this._defaultValue);
+
+  String get defaultValue => _defaultValue;
 }
 
 class DBAnnotationsParser {
@@ -66,14 +74,14 @@ class DBAnnotationsParser {
     return _ormClasses[className];
   }
 
-  static DBTableSQL getDBTableSQLForInstance(ORMModel instance){
+  static DBTableSQL getDBTableSQLForInstance(OrmModel instance){
     InstanceMirror mirror = reflect(instance);
     String instanceClassName = MirrorSystem.getName(mirror.type.simpleName);
 
     return _ormClasses[instanceClassName];
   }
 
-  static dynamic getPropertyValueForField(DBFieldSQL field, ORMModel instance){
+  static dynamic getPropertyValueForField(DBFieldSQL field, OrmModel instance){
     InstanceMirror mirror = reflect(instance);
     return mirror.getField(field.constructedFromPropertyName).reflectee;
   }
@@ -84,21 +92,21 @@ class DBAnnotationsParser {
     var propertyMeta = fieldMirror.metadata;
 
     for(InstanceMirror annotationMirror in propertyMeta){
-      String annotationTypeName = MirrorSystem.getName(annotationMirror.type.simpleName);
+      String annotationTypeName = getTypeName(annotationMirror.type);
 
       if(annotationTypeName == "DBFieldPrimaryKey"){
         field.isPrimaryKey = true;
       }
       if(annotationTypeName == "DBFieldType"){
-        field.type = annotationMirror.reflectee._type;
+        field.type = annotationMirror.reflectee.type;
       }
       if(annotationTypeName == 'DBFieldDefault'){
-        field.defaultValue = annotationMirror.reflectee._defaultValue;
+        field.defaultValue = annotationMirror.reflectee.defaultValue;
       }
     }
 
     if(field.type == null){
-      String fieldDartType = MirrorSystem.getName(fieldMirror.type.simpleName);
+      String fieldDartType = getTypeName(fieldMirror.type);
       switch (fieldDartType) {
         case 'int':
           field.type = 'int';
@@ -115,8 +123,8 @@ class DBAnnotationsParser {
       }
     }
 
-    if(field.name == null){
-      field.name = MirrorSystem.getName(fieldMirror.simpleName);
+    if(field.fieldName == null){
+      field.propertyName = getTypeName(fieldMirror);
     }
 
     field.constructedFromPropertyName = fieldMirror.simpleName;
@@ -130,7 +138,7 @@ class DBAnnotationsParser {
   static DBTableSQL constructTable(ClassMirror modelClassMirror){
     DBTableSQL table = new DBTableSQL();
 
-    table.name = _getTableName(modelClassMirror);
+    table.className = _getTableName(modelClassMirror);
     table.fields = _getFields(modelClassMirror);
 
     return table;
@@ -140,12 +148,12 @@ class DBAnnotationsParser {
     var classMetadata = modelClassMirror.metadata;
     String dbTableName = null;
     for (var m in classMetadata) {
-      if (MirrorSystem.getName(m.type.simpleName) == 'DBTable') {
-        dbTableName = m.reflectee._dbTableName;
+      if (getTypeName(m.type) == 'DBTable') {
+        dbTableName = m.reflectee.name;
       }
     }
     if (dbTableName == null) {
-      dbTableName = MirrorSystem.getName(modelClassMirror.simpleName);
+      dbTableName = getTypeName(modelClassMirror);
     }
     return dbTableName;
   }
@@ -155,7 +163,7 @@ class DBAnnotationsParser {
 
     for (var modelProperty in modelClassMirror.declarations.values) {
       for (var modelPropertyMeta in modelProperty.metadata) {
-        String propertyMetaName = MirrorSystem.getName(modelPropertyMeta.type.simpleName);
+        String propertyMetaName = getTypeName(modelPropertyMeta.type);
         if (propertyMetaName == 'DBField') {
           DBFieldSQL field = constructField(modelPropertyMeta, modelProperty);
           fields.add(field);
@@ -164,5 +172,9 @@ class DBAnnotationsParser {
     }
 
     return fields;
+  }
+
+  static String getTypeName(DeclarationMirror t){
+    return MirrorSystem.getName(t.simpleName);
   }
 }

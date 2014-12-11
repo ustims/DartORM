@@ -9,20 +9,17 @@ Feel free to contribute!
 Feature tour
 ============
 
-If you want jump to example code click here: https://github.com/ustims/DartORM/blob/master/example/example.dart
+If you want to jump to example code click here: https://github.com/ustims/DartORM/blob/master/example/example.dart
 
 Annotations
 -----------
-
-
-Classes and fields can be annotated like this
 
 ```dart
 import 'package:dart_orm/annotations.dart';
 
 @DBTable()
-// every DartORM class should extend ORMModel
-class User extends ORMModel {
+// every DartORM class should extend OrmModel
+class SomeUser extends OrmModel {
   // Every field that needs to be stored in database should be annotated with @DBField
   @DBField()
   @DBFieldPrimaryKey()
@@ -39,10 +36,24 @@ class User extends ORMModel {
 }
 ```
 
+With such annotated class when you first run OrmModel.migrate()
+
+it will execute such statement:
+
+```sql
+CREATE TABLE some_user (
+    id SERIAL PRIMARY KEY,
+    given_name text,
+    family_name text
+);
+```
+
+Migrations, schema versions and diffs will be implemented later.
+
 Inserts and updates
 -------------------
 
-Every ORMModel has .save() method which will update/insert new row.
+Every OrmModel has .save() method which will update/insert new row.
 
 If class instance has 'id' field with not-null value, .save() will execute 'UPDATE' statement with 'WHERE id = $id'.
 
@@ -58,12 +69,24 @@ u.save() // returns Future
 })
 ```
 
+This statement will be executed on save():
+
+```sql
+INSERT INTO some_user (
+    given_name,
+    family_name)
+VALUES (
+    'Sergey',
+    'Ustimenko'
+);
+```
+
 Finding records
 ---------------
 
 Package dart_orm/orm.dart has two classes for finding records: Find and FindOne.
 
-Constructors receives a class that extends ORMModel.
+Constructors receives a class that extends OrmModel.
 
 ```dart
 // Find and FindOne classes are here
@@ -80,5 +103,14 @@ Find f = new Find(User)
   ..orderBy('id', 'DESC')
   ..limit(10);
 
-  return f.execute(); // returns Future<ORMModel>
+  return f.execute(); // returns Future<OrmModel>
+```
+
+This will result such statement executed on the database:
+
+```sql
+SELECT *
+FROM some_user
+WHERE id < 3 AND (given_name = 'Sergey' OR (family_name = 'Ustimenko'))
+ORDER BY id DESC LIMIT 10
 ```

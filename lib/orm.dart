@@ -6,7 +6,7 @@ import 'sql_types.dart';
 
 
 @DBTable()
-class ORMInfoTable extends ORMModel {
+class OrmInfoTable extends OrmModel {
   @DBField()
   int currentVersion;
 
@@ -15,11 +15,11 @@ class ORMInfoTable extends ORMModel {
 }
 
 
-class ORMModel {
+class OrmModel {
   DBTableSQL _tableSql = null;
   static dynamic _connection = null;
 
-  ORMModel() {
+  OrmModel() {
     _tableSql = DBAnnotationsParser.getDBTableSQLForInstance(this);
   }
 
@@ -27,17 +27,20 @@ class ORMModel {
     _connection = conn;
   }
 
-  static void migrate() {
-    FindOne f = new FindOne(ORMInfoTable)
-      ..orderBy('currentVersion', OrderSQL.DESC)
+  static Future migrate() {
+    Completer completer = new Completer();
+
+    FindOne f = new FindOne(OrmInfoTable)
+      ..orderBy('current_version', OrderSQL.DESC)
       ..limit(1);
 
     f.execute()
-    .then((ORMInfoTable ormInfoTable) {
+    .then((OrmInfoTable ormInfoTable) {
       // TODO: check if existing schema in
       // tableDefinitions string is actual and run migrations
       // in dev mode or print diff in production mode
       print("yahoo");
+      completer.complete(true);
     })
     .catchError((err) {
       if (err.serverMessage.code == '42P01') {
@@ -47,29 +50,34 @@ class ORMModel {
 
         List<Future> futures = new List<Future>();
 
-        String tableDefinitions = '';
+        List<String> tableDefinitions = new List<String>();
 
         for (DBTableSQL t in ormClasses.values) {
           futures.add(_connection.execute(t.toSql()));
-          tableDefinitions += '\n' + t.toSql();
+          tableDefinitions.add(t.toSql());
         }
 
         Future.wait(futures)
         .then((allTables) {
           // all tables created, lets insert version info
-          ORMInfoTable ormInfo = new ORMInfoTable();
+          OrmInfoTable ormInfo = new OrmInfoTable();
           ormInfo.currentVersion = 0;
-          ormInfo.tableDefinitions = tableDefinitions;
+          ormInfo.tableDefinitions = tableDefinitions.join('\n');
           return ormInfo.save();
         })
         .then((ormInfoSaveResult) {
           print('ORM info saved.');
+          completer.complete(true);
         })
         .catchError((err) {
-          throw new Exception('Failed to create tables.');
+          completer.completeError(err);
         });
       }
+
+      completer.completeError('Something bad has happened');
     });
+
+    return completer.future;
   }
 
   String toSql() {
@@ -103,7 +111,7 @@ class ORMModel {
   }
 
   UpdateSQL getUpdateSQL() {
-    UpdateSQL updateSql = new UpdateSQL(_tableSql.name);
+    UpdateSQL updateSql = new UpdateSQL(_tableSql.tableName);
 
     for (DBFieldSQL field in _tableSql.fields) {
       TypedSQL valueSql = getTypedSqlFromValue(DBAnnotationsParser.getPropertyValueForField(field, this));
@@ -113,10 +121,10 @@ class ORMModel {
           throw new Exception('Cannot save model without id.');
         }
 
-        updateSql.where(new EqualsSQL(new RawSQL(field.name), valueSql));
+        updateSql.where(new EqualsSQL(new RawSQL(field.fieldName), valueSql));
       }
       else {
-        updateSql.set(field.name, valueSql);
+        updateSql.set(field.fieldName, valueSql);
       }
     }
 
@@ -124,13 +132,13 @@ class ORMModel {
   }
 
   InsertSQL getInsertSQL() {
-    InsertSQL insertSql = new InsertSQL(_tableSql.name);
+    InsertSQL insertSql = new InsertSQL(_tableSql.tableName);
 
     for (DBFieldSQL field in _tableSql.fields) {
       if (!field.isPrimaryKey) {
         TypedSQL valueSql = getTypedSqlFromValue(DBAnnotationsParser.getPropertyValueForField(field, this));
 
-        insertSql.value(field.name, valueSql);
+        insertSql.value(field.fieldName, valueSql);
       }
     }
 
@@ -182,24 +190,27 @@ class ORMModel {
     return completer.future;
   }
 
-  static Future<ORMModel> executeFindOne(Type modelType, SelectSQL sql) {
+  static Future<OrmModel> executeFindOne(Type modelType, SelectSQL sql) {
     Completer completer = new Completer();
 
     executeFind(modelType, sql)
-    .then((List<ORMModel> foundModels) {
+    .then((List<OrmModel> foundModels) {
       completer.complete(foundModels.first);
+    })
+    .catchError((err) {
+      completer.completeError(err);
     });
 
     return completer.future;
   }
 
-  static Future<List<ORMModel>> executeFind(Type modelType, SelectSQL sql) {
+  static Future<List<OrmModel>> executeFind(Type modelType, SelectSQL sql) {
     Completer completer = new Completer();
 
     DBTableSQL modelTableSQL = DBAnnotationsParser.getDBTableSQLForType(modelType);
     ClassMirror modelMirror = reflectClass(modelType);
 
-    List<ORMModel> foundInstances = new List<ORMModel>();
+    List<OrmModel> foundInstances = new List<OrmModel>();
 
     _connection.query(sql.toSql())
     .toList()
@@ -217,6 +228,9 @@ class ORMModel {
       }
 
       completer.complete(foundInstances);
+    })
+    .catchError((err) {
+      completer.completeError(err);
     });
 
     return completer.future;
@@ -263,12 +277,12 @@ class FindBase extends SelectSQL {
 
   FindBase(Type this._modelType): super(['*']) {
     _tableSql = DBAnnotationsParser.getDBTableSQLForType(_modelType);
-    table(_tableSql.name);
+    table(_tableSql.tableName);
   }
 
   whereEquals(String fieldName, var fieldValue) {
     for (DBFieldSQL field in _tableSql.fields) {
-      if (fieldName == field.name) {
+      if (fieldName == field.fieldName) {
         where(new EqualsSQL(new RawSQL(fieldName), getTypedSqlFromValue(fieldValue)));
       }
     }
@@ -276,11 +290,13 @@ class FindBase extends SelectSQL {
 
   void _formatCondition(ConditionSQL cond) {
     for (DBFieldSQL field in _tableSql.fields) {
-      if (!(cond.firstVar is TypedSQL) && field.name == cond.firstVar) {
-        cond.firstVar = new RawSQL(cond.firstVar);
+      if (!(cond.firstVar is TypedSQL)
+        && (field.fieldName == cond.firstVar || field.propertyName == cond.firstVar)) {
+        cond.firstVar = new RawSQL(SQL.camelCaseToUnderscore(cond.firstVar));
       }
-      if (!(cond.secondVar is TypedSQL) && field.name == cond.secondVar) {
-        cond.secondVar = new RawSQL(cond.secondVar);
+      if (!(cond.secondVar is TypedSQL)
+        && (field.fieldName == cond.secondVar || field.propertyName == cond.secondVar)) {
+        cond.secondVar = new RawSQL(SQL.camelCaseToUnderscore(cond.secondVar));
       }
     }
     if (cond.conditionQueue.length > 0) {
@@ -299,15 +315,15 @@ class FindBase extends SelectSQL {
 class Find extends FindBase {
   Find(Type modelType): super(modelType);
 
-  Future<List<ORMModel>> execute() {
-    return ORMModel.executeFind(_modelType, this);
+  Future<List<OrmModel>> execute() {
+    return OrmModel.executeFind(_modelType, this);
   }
 }
 
 class FindOne extends FindBase {
   FindOne(Type modelType): super(modelType);
 
-  Future<ORMModel> execute() {
-    return ORMModel.executeFindOne(_modelType, this);
+  Future<OrmModel> execute() {
+    return OrmModel.executeFindOne(_modelType, this);
   }
 }
