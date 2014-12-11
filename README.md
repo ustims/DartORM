@@ -60,7 +60,7 @@ If class instance has 'id' field with not-null value, .save() will execute 'UPDA
 If class instance has null 'id' field, 'INSERT' statement will be executed.
 
 ```dart
-User u = new User();
+SomeUser u = new SomeUser();
 u.givenName = 'Sergey';
 u.familyName = 'Ustimenko';
 
@@ -94,16 +94,21 @@ import 'package:dart_orm/orm.dart';
 // Sql construction helpers such as EqualsSQL are here
 import 'package:dart_orm/sql.dart';
 
-Find f = new Find(User)
+Find f = new Find(SomeUser)
   ..where(new LowerThanSQL('id', 3)
     .and(new EqualsSQL('givenName', 'Sergey')
       .or(new EqualsSQL('familyName', 'Ustimenko'))
     )
   )
   ..orderBy('id', 'DESC')
-  ..limit(10);
-
-  return f.execute(); // returns Future<OrmModel>
+  ..limit(10)
+  ..execute()
+  .then((List<SomeUser> foundUsers) {
+    for(SomeUser u in foundUsers){
+      print('Found user:');
+      print(u);
+    }
+  });
 ```
 
 This will result such statement executed on the database:
