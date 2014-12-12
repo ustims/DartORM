@@ -2,13 +2,31 @@ import 'dart:mirrors';
 import 'sql.dart';
 import 'orm.dart';
 
+/**
+ * Database table annotation. If some class wants to be orm-enabled,
+ * it needs to be annotated with DBTable().
+ *
+ * This class is only for annotation purposes,
+ * and its data is used to construct [DBTableSQL] instances.
+ */
 class DBTable {
   final String _dbTableName;
+
+  /**
+   * New instance annotation.
+   * By default, database table name will be class name converted to underscores.
+   * One can override this by providing String parameter 'tableName' to constructor.
+   */
   const DBTable([String this._dbTableName]);
 
   String get name => _dbTableName;
 }
 
+/**
+ * Database field annotation.
+ * Every property of class that needs to be stored to database
+ * should be annotated with @DBField
+ */
 class DBField {
   final String _dbFieldName;
   const DBField([String this._dbFieldName]);
@@ -36,7 +54,7 @@ class DBFieldDefault {
   String get defaultValue => _defaultValue;
 }
 
-class DBAnnotationsParser {
+class OrmAnnotationsParser {
   static Map<String, DBTableSQL> _ormClasses = new Map<String, DBTableSQL>();
 
   static get ormClasses => _ormClasses;
@@ -54,7 +72,7 @@ class DBAnnotationsParser {
               String metaClassName = MirrorSystem.getName(metaInstanceMirror.type.simpleName);
 
               if(metaClassName == 'DBTable'){
-                DBTableSQL table = DBAnnotationsParser.constructTable(declaration);
+                DBTableSQL table = OrmAnnotationsParser.constructTable(declaration);
                 _ormClasses[modelClassName] = table;
               }
             }
@@ -109,7 +127,12 @@ class DBAnnotationsParser {
       String fieldDartType = getTypeName(fieldMirror.type);
       switch (fieldDartType) {
         case 'int':
-          field.type = 'int';
+          if(field.isPrimaryKey){
+            field.type = 'SERIAL';
+          }
+          else{
+            field.type = 'int';
+          }
           break;
         case 'String':
           field.type = 'text';

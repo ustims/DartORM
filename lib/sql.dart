@@ -202,8 +202,8 @@ class SelectSQL extends SQL {
     this._where = cond;
   }
 
-  orderBy(String fieldName, String order) {
-    _sorts[fieldName] = order;
+  orderBy(TypedSQL fieldName, String order) {
+    _sorts[fieldName.toSql()] = order;
   }
 
   toSql() {
@@ -305,9 +305,17 @@ class InsertSQL {
   }
 }
 
+
+/**
+ * Represents database field.
+ */
 class DBFieldSQL {
   bool _isPrimaryKey = false;
   bool _isUnique = false;
+
+  /**
+   * Raw database type string. For example: TIMESTAMP
+   */
   String _type;
 
   /**

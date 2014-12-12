@@ -17,20 +17,25 @@ Annotations
 ```dart
 import 'package:dart_orm/annotations.dart';
 
-@DBTable()
 // every DartORM class should extend OrmModel
+@DBTable()
 class SomeUser extends OrmModel {
   // Every field that needs to be stored in database should be annotated with @DBField
   @DBField()
   @DBFieldPrimaryKey()
   // Database field type can be overridden to database-engine specific type
+  // By default a property annotated with DBFieldPrimaryKey will set field type to SERIAL
+  // So this is for example.
   @DBFieldType('SERIAL')
   int id;
 
   @DBField()
   String givenName;
 
-  // Database field name can be provided
+  // Database field name will be converted to underscore
+  // for example: family_name in this case,
+  // but this can be overridden by
+  // providing string argument to the annotation constructor
   @DBField('family_name')
   String familyName;
 }

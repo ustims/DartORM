@@ -2,6 +2,8 @@
 import 'package:dart_orm/annotations.dart';
 import 'package:dart_orm/orm.dart';
 import 'package:dart_orm/sql.dart';
+import 'package:dart_orm/adapter_postgres.dart';
+import 'package:dart_orm/migrator.dart';
 
 import 'package:postgresql/postgresql.dart';
 
@@ -17,22 +19,25 @@ class SomeUser extends OrmModel {
 
   @DBField()
   String familyName;
+
+  String toString(){
+    return 'SomeUser { id: $id, givenName: \'$givenName\', familyName: \'$familyName\' }';
+  }
 }
 
 void main(){
   // This will scan current isolate
   // for classes annotated with DBTable
   // and store sql definitions for them in memory
-  DBAnnotationsParser.initialize();
+  OrmAnnotationsParser.initialize();
 
   var uri = 'postgres://dart_test:dart_test@localhost:5432/dart_test';
   connect(uri).then((conn) {
-    // orm initialization
-    OrmModel.setConnection(conn);
+    OrmModel.ormAdapter = new PostgresAdapter(conn);
     // this will try to select current
     // schema version from database, and if it is empty -
     // create all the tables for found classes annotated with @DBTable
-    return OrmModel.migrate();
+    return OrmMigrator.migrate();
   })
   .then((migrationResult) {
     // lets try to save some user
@@ -55,6 +60,9 @@ void main(){
     assert(user.id == 1);
     assert(user.givenName == 'Sergey');
 
+    print('Found user:');
+    print(user.toString());
+
     // now lets try something not so simple
     Find f = new Find(SomeUser)
       ..where(new LowerThanSQL('id', 3)
@@ -65,13 +73,14 @@ void main(){
       ..orderBy('id', 'DESC')
       ..limit(10);
 
-    print(f.toSql());
-
     return f.execute();
   })
   .then((List foundUsers) {
     assert(foundUsers.length > 0);
     assert(foundUsers[0].givenName == 'Sergey');
+
+    print('Found list of users:');
+    print(foundUsers);
   })
   .catchError((err) {
     print("Error!");
