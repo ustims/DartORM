@@ -1,14 +1,9 @@
-
-import 'package:dart_orm/annotations.dart';
 import 'package:dart_orm/orm.dart';
-import 'package:dart_orm/sql.dart';
-import 'package:dart_orm/adapter_postgres.dart';
-import 'package:dart_orm/migrator.dart';
 
-import 'package:postgresql/postgresql.dart';
+import 'package:postgresql/postgresql.dart' as psql_connector;
 
-@DBTable()
-class SomeUser extends OrmModel {
+@DBTable('users')
+class User extends OrmModel {
   @DBField()
   @DBFieldPrimaryKey()
   @DBFieldType('SERIAL')
@@ -21,9 +16,25 @@ class SomeUser extends OrmModel {
   String familyName;
 
   String toString(){
-    return 'SomeUser { id: $id, givenName: \'$givenName\', familyName: \'$familyName\' }';
+    return 'User { id: $id, givenName: \'$givenName\', familyName: \'$familyName\' }';
   }
 }
+
+//@DBTable()
+//class Comment {
+//  @DBField()
+//  @DBFieldPrimaryKey()
+//  int id;
+//
+//  @DBField()
+//  User postedBy;
+//
+//  @DBField()
+//  List<User> likedBy;
+//
+//  @DBField()
+//  String commentBody;
+//}
 
 void main(){
   // This will scan current isolate
@@ -32,8 +43,10 @@ void main(){
   OrmAnnotationsParser.initialize();
 
   var uri = 'postgres://dart_test:dart_test@localhost:5432/dart_test';
-  connect(uri).then((conn) {
-    OrmModel.ormAdapter = new PostgresAdapter(conn);
+  psql_connector.connect(uri).then((conn) {
+    OrmModel.ormAdapter = new PostgresqlAdapter(conn);
+    //OrmModel.ormAdapter = new MemoryAdapter();
+
     // this will try to select current
     // schema version from database, and if it is empty -
     // create all the tables for found classes annotated with @DBTable
@@ -41,7 +54,7 @@ void main(){
   })
   .then((migrationResult) {
     // lets try to save some user
-    SomeUser u = new SomeUser();
+    User u = new User();
     u.givenName = 'Sergey';
     u.familyName = 'Ustimenko';
 
@@ -51,12 +64,12 @@ void main(){
     assert(saveResult > 0);
 
     // lets try simple one-row select by id
-    FindOne f = new FindOne(SomeUser)
+    FindOne f = new FindOne(User)
       ..whereEquals('id', 1); // whereEquals is just a shortcut for .where(new EqualsSQL('id', 1))
 
     return f.execute();
   })
-  .then((SomeUser user) {
+  .then((User user) {
     assert(user.id == 1);
     assert(user.givenName == 'Sergey');
 
@@ -64,14 +77,14 @@ void main(){
     print(user.toString());
 
     // now lets try something not so simple
-    Find f = new Find(SomeUser)
+    Find f = new Find(User)
       ..where(new LowerThanSQL('id', 3)
         .and(new EqualsSQL('givenName', 'Sergey')
           .or(new EqualsSQL('familyName', 'Ustimenko'))
         )
       )
       ..orderBy('id', 'DESC')
-      ..limit(10);
+      ..setLimit(10);
 
     return f.execute();
   })

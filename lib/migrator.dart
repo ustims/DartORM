@@ -1,8 +1,5 @@
-import 'dart:async';
-import 'package:dart_orm/orm.dart';
-import 'package:dart_orm/sql.dart';
-import 'package:dart_orm/annotations.dart';
-import 'package:dart_orm/adapter.dart';
+part of dart_orm;
+
 
 class OrmMigrator {
   static Future migrate() {
@@ -14,7 +11,7 @@ class OrmMigrator {
     // So the first thing we want to do is check it.
     FindOne f = new FindOne(OrmInfoTable)
       ..orderBy('currentVersion', OrderSQL.DESC)
-      ..limit(1);
+      ..setLimit(1);
 
     f.execute()
     .then((OrmInfoTable ormInfoTable) {
@@ -24,11 +21,11 @@ class OrmMigrator {
       print("yahoo");
       completer.complete(true);
     })
-    .catchError((err) {
-      if (adapter.parseError(err.serverMessage.code) == OrmDBAdapter.ErrTableNotExist) {
+    .catchError((Exception err) {
+      if (err.message == OrmDBAdapter.ErrTableNotExist) {
         // relation does not exists
         // create db
-        createSchemasFromScratch(adapter.connection, OrmAnnotationsParser.ormClasses)
+        createSchemasFromScratch(adapter, OrmAnnotationsParser.ormClasses)
         .then((bool completeResult){
           print('All orm tables were created from scratch.');
           completer.complete(true);
@@ -38,16 +35,17 @@ class OrmMigrator {
           completer.completeError(err);
         });
       }
-
-      // its bad if we don't know what happened
-      // because we miss all the ifs above, but lets notice about it.
-      completer.completeError(err);
+      else{
+        // its bad if we don't know what happened
+        // because we miss all the ifs above, but lets notice about it.
+        completer.completeError(err);
+      }
     });
 
     return completer.future;
   }
 
-  static Future createSchemasFromScratch(dynamic connection,
+  static Future createSchemasFromScratch(OrmDBAdapter adapter,
                                          Map<String, DBTableSQL> ormClasses){
     Completer completer = new Completer();
 
@@ -57,8 +55,8 @@ class OrmMigrator {
     List<String> tableDefinitions = new List<String>();
 
     for (DBTableSQL t in ormClasses.values) {
-      futures.add(connection.execute(t.toSql()));
-      tableDefinitions.add(t.toSql());
+      futures.add(adapter.execute(t));
+      tableDefinitions.add(SQLAdapter.constructTableSql(t));
     }
 
     Future.wait(futures)

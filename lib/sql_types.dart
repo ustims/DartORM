@@ -1,3 +1,6 @@
+part of dart_orm;
+
+
 abstract class TypedSQL {
   String toSql();
 }

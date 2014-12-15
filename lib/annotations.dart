@@ -1,6 +1,5 @@
-import 'dart:mirrors';
-import 'sql.dart';
-import 'orm.dart';
+part of dart_orm;
+
 
 /**
  * Database table annotation. If some class wants to be orm-enabled,
@@ -29,6 +28,7 @@ class DBTable {
  */
 class DBField {
   final String _dbFieldName;
+
   const DBField([String this._dbFieldName]);
 
   String get name => _dbFieldName;
@@ -59,78 +59,93 @@ class OrmAnnotationsParser {
 
   static get ormClasses => _ormClasses;
 
-  static void initialize(){
-    MirrorSystem m = currentMirrorSystem();
-    IsolateMirror i = m.isolate;
+  static void initialize() {
+    List<ClassMirror> classMirrorsWithMetadata = getAllClassesWithMetadata();
 
-    for(LibraryMirror mm in m.libraries.values){
-      for(var declaration in mm.declarations.values){
-        if(declaration is ClassMirror){
-          if(declaration.metadata.length > 0){
-            for(InstanceMirror metaInstanceMirror in declaration.metadata){
-              String modelClassName = MirrorSystem.getName(declaration.simpleName);
-              String metaClassName = MirrorSystem.getName(metaInstanceMirror.type.simpleName);
+    for (ClassMirror classMirror in classMirrorsWithMetadata) {
+      for (InstanceMirror metaInstanceMirror in classMirror.metadata) {
+        String modelClassName = MirrorSystem.getName(classMirror.simpleName);
+        String metaClassName = MirrorSystem.getName(metaInstanceMirror.type.simpleName);
 
-              if(metaClassName == 'DBTable'){
-                DBTableSQL table = OrmAnnotationsParser.constructTable(declaration);
-                _ormClasses[modelClassName] = table;
-              }
-            }
-          }
+        if (metaClassName == 'DBTable') {
+          DBTableSQL table = OrmAnnotationsParser.constructTable(classMirror);
+          _ormClasses[modelClassName] = table;
         }
       }
     }
   }
 
-  static DBTableSQL getDBTableSQLForType(Type modelType){
+  /**
+   * Iterates through all class declarations in current isolate
+   * and returns a big list of all classes that have any metadata attached to.
+   */
+  static List<ClassMirror> getAllClassesWithMetadata() {
+    List<ClassMirror> classMirrors = new List<ClassMirror>();
+
+    MirrorSystem m = currentMirrorSystem();
+    IsolateMirror i = m.isolate;
+
+    for (LibraryMirror mm in m.libraries.values) {
+      for (var declaration in mm.declarations.values) {
+        if (declaration is ClassMirror) {
+          if (declaration.metadata.length > 0) {
+            classMirrors.add(declaration);
+          }
+        }
+      }
+    }
+    return classMirrors;
+  }
+
+  static DBTableSQL getDBTableSQLForType(Type modelType) {
     ClassMirror modelMirror = reflectClass(modelType);
     String modelClassName = MirrorSystem.getName(modelMirror.simpleName);
     return _ormClasses[modelClassName];
   }
 
-  static DBTableSQL getDBTableSQLForClassName(String className){
+  static DBTableSQL getDBTableSQLForClassName(String className) {
     return _ormClasses[className];
   }
 
-  static DBTableSQL getDBTableSQLForInstance(OrmModel instance){
+  static DBTableSQL getDBTableSQLForInstance(OrmModel instance) {
     InstanceMirror mirror = reflect(instance);
     String instanceClassName = MirrorSystem.getName(mirror.type.simpleName);
 
     return _ormClasses[instanceClassName];
   }
 
-  static dynamic getPropertyValueForField(DBFieldSQL field, OrmModel instance){
+  static dynamic getPropertyValueForField(DBFieldSQL field, OrmModel instance) {
     InstanceMirror mirror = reflect(instance);
     return mirror.getField(field.constructedFromPropertyName).reflectee;
   }
 
-  static DBFieldSQL constructField(InstanceMirror annotation, VariableMirror fieldMirror){
+  static DBFieldSQL constructField(InstanceMirror annotation, VariableMirror fieldMirror) {
     DBFieldSQL field = new DBFieldSQL();
 
     var propertyMeta = fieldMirror.metadata;
 
-    for(InstanceMirror annotationMirror in propertyMeta){
+    for (InstanceMirror annotationMirror in propertyMeta) {
       String annotationTypeName = getTypeName(annotationMirror.type);
 
-      if(annotationTypeName == "DBFieldPrimaryKey"){
+      if (annotationTypeName == "DBFieldPrimaryKey") {
         field.isPrimaryKey = true;
       }
-      if(annotationTypeName == "DBFieldType"){
+      if (annotationTypeName == "DBFieldType") {
         field.type = annotationMirror.reflectee.type;
       }
-      if(annotationTypeName == 'DBFieldDefault'){
+      if (annotationTypeName == 'DBFieldDefault') {
         field.defaultValue = annotationMirror.reflectee.defaultValue;
       }
     }
 
-    if(field.type == null){
+    if (field.type == null) {
       String fieldDartType = getTypeName(fieldMirror.type);
       switch (fieldDartType) {
         case 'int':
-          if(field.isPrimaryKey){
+          if (field.isPrimaryKey) {
             field.type = 'SERIAL';
           }
-          else{
+          else {
             field.type = 'int';
           }
           break;
@@ -146,7 +161,7 @@ class OrmAnnotationsParser {
       }
     }
 
-    if(field.fieldName == null){
+    if (field.fieldName == null) {
       field.propertyName = getTypeName(fieldMirror);
     }
 
@@ -158,7 +173,7 @@ class OrmAnnotationsParser {
   /**
    * Scans DB* annotations on class fields and constructs DBTableSQL instance
    */
-  static DBTableSQL constructTable(ClassMirror modelClassMirror){
+  static DBTableSQL constructTable(ClassMirror modelClassMirror) {
     DBTableSQL table = new DBTableSQL();
 
     table.className = _getTableName(modelClassMirror);
@@ -167,7 +182,7 @@ class OrmAnnotationsParser {
     return table;
   }
 
-  static String _getTableName(ClassMirror modelClassMirror){
+  static String _getTableName(ClassMirror modelClassMirror) {
     var classMetadata = modelClassMirror.metadata;
     String dbTableName = null;
     for (var m in classMetadata) {
@@ -181,7 +196,7 @@ class OrmAnnotationsParser {
     return dbTableName;
   }
 
-  static List<DBFieldSQL> _getFields(ClassMirror modelClassMirror){
+  static List<DBFieldSQL> _getFields(ClassMirror modelClassMirror) {
     List<DBFieldSQL> fields = new List<DBFieldSQL>();
 
     for (var modelProperty in modelClassMirror.declarations.values) {
@@ -197,7 +212,7 @@ class OrmAnnotationsParser {
     return fields;
   }
 
-  static String getTypeName(DeclarationMirror t){
+  static String getTypeName(DeclarationMirror t) {
     return MirrorSystem.getName(t.simpleName);
   }
 }

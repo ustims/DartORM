@@ -1,5 +1,5 @@
-import 'dart:collection';
-import 'sql_types.dart';
+part of dart_orm;
+
 
 class ConditionLogic {
   static String AND = 'AND';
@@ -13,29 +13,6 @@ class OrderSQL {
 }
 
 class SQL {
-  int _limit = null;
-  int _offset = null;
-
-  limit(int rowsNumber) {
-    this._limit = rowsNumber;
-  }
-
-  offset(int rowsNumber) {
-    this._offset = rowsNumber;
-  }
-
-  String _toSql(String preparedSql) {
-    if (this._limit != null) {
-      preparedSql += " LIMIT " + this._limit.toString();
-    }
-
-    if (this._offset != null) {
-      preparedSql += " OFFSET " + this._offset.toString();
-    }
-
-    return preparedSql;
-  }
-
   static String camelCaseToUnderscore(String camelCase){
     String result = '';
     int charNumber = 0;
@@ -65,9 +42,27 @@ class SQL {
 }
 
 class ConditionSQL {
+  /**
+   * First variable for comparation.
+   */
   dynamic _firstVar = null;
+
+  /**
+   * Second variable for comparation.
+   */
   dynamic _secondVar = null;
+
+  /**
+   * Variable comparation rule. For example: '=' or '<'.
+   */
   String _condition = null;
+
+  /**
+   * Condition logic.
+   * Can be not-null obly if this condition
+   * is appended to another condition and here will be append
+   * logic such as 'AND' or 'OR'
+   */
   String _logic = null;
 
   List<ConditionSQL> conditionQueue;
@@ -86,6 +81,16 @@ class ConditionSQL {
     _secondVar = value;
   }
 
+  dynamic get condition => _condition;
+  void set condition(String condition){
+    _condition = condition;
+  }
+
+  String get logic => _logic;
+  void set logic(String logic){
+    _logic = logic;
+  }
+
   ConditionSQL and(ConditionSQL cond) {
     cond._logic = ConditionLogic.AND;
     conditionQueue.add(cond);
@@ -96,34 +101,6 @@ class ConditionSQL {
     cond._logic = ConditionLogic.OR;
     conditionQueue.add(cond);
     return this;
-  }
-
-  String toSql() {
-    String sql = this._toSql();
-
-    for (ConditionSQL cond in conditionQueue) {
-      if (cond._logic != null) {
-        sql += ' ' + cond._logic + ' (';
-      }
-
-      sql += cond.toSql();
-
-      if (cond._logic != null) {
-        sql += ')';
-      }
-    }
-
-    return sql;
-  }
-
-  String _toSql() {
-    if(!(_firstVar is TypedSQL)){
-      _firstVar = getTypedSqlFromValue(_firstVar);
-    }
-    if(!(_secondVar is TypedSQL)){
-      _secondVar = getTypedSqlFromValue(_secondVar);
-    }
-    return _firstVar.toSql() + ' ' + _condition + ' ' + _secondVar.toSql();
   }
 }
 
@@ -159,27 +136,65 @@ class JoinSQL {
 
   JoinSQL(this._joinType, this._tableName, this._tableAlias, this._joinCondition);
 
-  toSql() {
-    String sql = '';
-    sql += '\n' + this._joinType.toUpperCase() + ' JOIN ';
-    sql += this._tableName;
-    sql += ' AS ' + this._tableAlias;
-    sql += '\n ON ' + this._joinCondition.toSql();
-    return sql;
-  }
+  //----------------------------------------------------------
+  // Getters & setters
+  //----------------------------------------------------------
+  String get joinType => _joinType;
+  String get tableName => _tableName;
+  String get tableAlias => _tableAlias;
+  ConditionSQL get joinCondition => _joinCondition;
+  //----------------------------------------------------------
+  // /Getters & setters
+  //----------------------------------------------------------
 }
 
 class SelectSQL extends SQL {
   List<String> _columnsToSelect = null;
   String _tableName = null;
   String _tableAlias = null;
-  ConditionSQL _where = null;
+  ConditionSQL _condition = null;
   List<JoinSQL> _joins = new List<JoinSQL>();
   Map<String, String> _sorts = new Map<String, String>();
+  int _limit = null;
+  int _offset = null;
 
   SelectSQL(List<String> columnsToSelect) {
     this._columnsToSelect = columnsToSelect;
   }
+
+  //----------------------------------------------------------
+  // Getters & setters
+  //----------------------------------------------------------
+  List<String> get columnsToSelect => _columnsToSelect;
+  void set columnsToSelect(List<String> columnsList){
+    _columnsToSelect = columnsList;
+  }
+
+  String get tableName => _tableName;
+  String get tableAlias => _tableAlias;
+
+  ConditionSQL get condition => _condition;
+  List<JoinSQL> get joins => _joins;
+  Map<String, String> get sorts => _sorts;
+
+  int get limit => _limit;
+  void set limit(int limit) {
+    this._limit = limit;
+  }
+  void setLimit(int limit){
+    this._limit = limit;
+  }
+
+  int get offset => _offset;
+  void set offset(int offset) {
+    this._offset = offset;
+  }
+  void setOffset(int offset){
+    _offset = offset;
+  }
+  //----------------------------------------------------------
+  // /Getters & setters
+  //----------------------------------------------------------
 
   table(String tableName, [String tableAlias]) {
     this._tableName = tableName;
@@ -199,42 +214,11 @@ class SelectSQL extends SQL {
   }
 
   where(ConditionSQL cond) {
-    this._where = cond;
+    this._condition = cond;
   }
 
   orderBy(TypedSQL fieldName, String order) {
     _sorts[fieldName.toSql()] = order;
-  }
-
-  toSql() {
-    String sql = 'SELECT ';
-    sql += this._columnsToSelect.join(', \n       ');
-    sql += ' \nFROM ' + this._tableName;
-
-    if (this._tableAlias != null) {
-      sql += ' AS ' + this._tableAlias;
-    }
-
-    if (this._joins.length > 0) {
-      for (JoinSQL j in this._joins) {
-        sql += j.toSql();
-      }
-    }
-
-    if (this._where != null) {
-      sql += '\nWHERE ' + this._where.toSql();
-    }
-
-    if (this._sorts.length > 0) {
-      sql += '\nORDER BY ';
-      List<String> sorts = new List<String>();
-      for (String sortField in _sorts.keys) {
-        sorts.add(sortField + ' ' + _sorts[sortField]);
-      }
-      sql += sorts.join(', ');
-    }
-
-    return this._toSql(sql);
   }
 }
 
@@ -245,30 +229,16 @@ class UpdateSQL {
 
   UpdateSQL(String this._tableName);
 
+  String get tableName => tableName;
+  LinkedHashMap<String, TypedSQL> get fieldsToUpdate => _fieldsToUpdate;
+  ConditionSQL get condition => _condition;
+
   set(String fieldName, TypedSQL fieldValue) {
     _fieldsToUpdate[fieldName] = fieldValue;
   }
 
   where(ConditionSQL cond) {
     _condition = cond;
-  }
-
-  String toSql() {
-    String sql = 'UPDATE $_tableName ';
-    sql += '\nSET ';
-
-    List<String> fields = new List<String>();
-
-
-    _fieldsToUpdate.forEach((String fieldName, TypedSQL fieldValue) {
-      fields.add(fieldName + ' = ' + fieldValue.toSql());
-    });
-
-    sql += fields.join(',\n    ');
-
-    sql += '\nWHERE ' + _condition.toSql();
-
-    return sql;
   }
 }
 
@@ -278,33 +248,13 @@ class InsertSQL {
 
   InsertSQL(String this._tableName);
 
+  LinkedHashMap<String, TypedSQL> get fieldsToInsert => _fieldsToInsert;
+  String get tableName => _tableName;
+
   value(String fieldName, TypedSQL fieldValue) {
     _fieldsToInsert[fieldName] = fieldValue;
   }
-
-  String toSql() {
-    List<String> fieldNames = new List<String>();
-    List<String> fieldValues = new List<String>();
-
-    _fieldsToInsert.forEach((String fieldName, TypedSQL fieldValue) {
-      if (fieldValue != null) {
-        fieldNames.add(fieldName);
-        fieldValues.add(fieldValue.toSql());
-      }
-
-    });
-
-    String sql = 'INSERT INTO $_tableName (\n    ';
-    sql += fieldNames.join(',\n    ');
-    sql += ')\n';
-    sql += 'VALUES (\n    ';
-    sql += fieldValues.join(',\n    ');
-    sql += '\n);';
-
-    return sql;
-  }
 }
-
 
 /**
  * Represents database field.
@@ -373,24 +323,6 @@ class DBFieldSQL {
   void set constructedFromPropertyName(Symbol constructedFrom) {
     _constructedFromPropertyName = constructedFrom;
   }
-
-  String toSql() {
-    String fieldDefinition = _fieldName + ' ' + _type;
-
-    if (_isPrimaryKey) {
-      fieldDefinition += ' PRIMARY KEY';
-    }
-
-    if (_defaultValue != null) {
-      fieldDefinition += ' DEFAULT ' + _defaultValue.toString();
-    }
-
-    if (_isUnique) {
-      fieldDefinition += ' UNIQUE';
-    }
-
-    return fieldDefinition;
-  }
 }
 
 class DBTableSQL {
@@ -419,25 +351,7 @@ class DBTableSQL {
   }
 
   List<DBFieldSQL> get fields => _fields;
-
   void set fields(List<DBFieldSQL> fields) {
     _fields = fields;
-  }
-
-  String toSql() {
-    String tableName = _tableName;
-    String sql = 'CREATE TABLE $tableName (';
-
-    List<String> fieldDefinitions = new List<String>();
-
-    for (DBFieldSQL f in _fields) {
-      String fieldDefinition = '\n    ' + f.toSql();
-      fieldDefinitions.add(fieldDefinition);
-    }
-
-    sql += fieldDefinitions.join(',');
-    sql += '\n);';
-
-    return sql;
   }
 }

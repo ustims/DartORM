@@ -1,9 +1,18 @@
+library dart_orm;
+
+
 import 'dart:mirrors';
-import 'sql.dart';
 import 'dart:async';
-import 'annotations.dart';
-import 'sql_types.dart';
-import 'adapter.dart';
+import 'dart:collection';
+
+part 'sql.dart';
+part 'annotations.dart';
+part 'sql_types.dart';
+part 'adapter.dart';
+part 'adapter_sql.dart';
+part 'adapter_memory.dart';
+part 'adapter_postgres.dart';
+part 'migrator.dart';
 
 
 @DBTable()
@@ -29,10 +38,6 @@ class OrmModel {
     _sAdapter = adapter;
   }
   static get ormAdapter => _sAdapter;
-
-  String toSql() {
-    return _tableSql.toSql();
-  }
 
   /**
    * Returns DBFieldSQL instance
@@ -119,9 +124,16 @@ class OrmModel {
   Future save() {
     Completer completer = new Completer();
 
-    String saveSql = getSaveSql();
+    var primaryKeyValue = getPrimaryKeyValue();
+    var operation = null;
+    if (primaryKeyValue != null) {
+      operation = getUpdateSQL();
+    }
+    else {
+      operation = getInsertSQL();
+    }
 
-    ormAdapter.execute(saveSql)
+    ormAdapter.execute(operation)
     .then((result) {
       if (result != 1) {
         completer.completeError('Failed to save model!');
@@ -211,7 +223,7 @@ class FindBase extends SelectSQL {
     return completer.future;
   }
 
-  static Future<List<OrmModel>> _executeFind(Type modelType, SelectSQL sql) {
+  static Future<List<OrmModel>> _executeFind(Type modelType, SelectSQL selectSql) {
     Completer completer = new Completer();
 
     DBTableSQL modelTableSQL = OrmAnnotationsParser.getDBTableSQLForType(modelType);
@@ -219,8 +231,8 @@ class FindBase extends SelectSQL {
 
     List<OrmModel> foundInstances = new List<OrmModel>();
 
-    OrmModel.ormAdapter.query(sql.toSql())
-    .toList()
+    //OrmModel.ormAdapter.query(sql.toSql())
+    OrmModel.ormAdapter.query(selectSql)
     .then((rows) {
       for (var row in rows) {
         int fieldNumber = 0;
