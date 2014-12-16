@@ -1,18 +1,18 @@
-import 'package:dart_orm/orm.dart';
+import 'package:dart_orm/orm.dart' as ORM;
 
 import 'package:postgresql/postgresql.dart' as psql_connector;
 
-@DBTable('users')
-class User extends OrmModel {
-  @DBField()
-  @DBFieldPrimaryKey()
-  @DBFieldType('SERIAL')
+@ORM.DBTable('users')
+class User extends ORM.Model {
+  @ORM.DBField()
+  @ORM.DBFieldPrimaryKey()
+  @ORM.DBFieldType('SERIAL')
   int id;
 
-  @DBField()
+  @ORM.DBField()
   String givenName;
 
-  @DBField()
+  @ORM.DBField()
   String familyName;
 
   String toString(){
@@ -20,37 +20,21 @@ class User extends OrmModel {
   }
 }
 
-//@DBTable()
-//class Comment {
-//  @DBField()
-//  @DBFieldPrimaryKey()
-//  int id;
-//
-//  @DBField()
-//  User postedBy;
-//
-//  @DBField()
-//  List<User> likedBy;
-//
-//  @DBField()
-//  String commentBody;
-//}
-
 void main(){
   // This will scan current isolate
   // for classes annotated with DBTable
   // and store sql definitions for them in memory
-  OrmAnnotationsParser.initialize();
+  ORM.AnnotationsParser.initialize();
 
   var uri = 'postgres://dart_test:dart_test@localhost:5432/dart_test';
   psql_connector.connect(uri).then((conn) {
-    OrmModel.ormAdapter = new PostgresqlAdapter(conn);
+    ORM.Model.ormAdapter = new ORM.PostgresqlAdapter(conn);
     //OrmModel.ormAdapter = new MemoryAdapter();
 
     // this will try to select current
     // schema version from database, and if it is empty -
     // create all the tables for found classes annotated with @DBTable
-    return OrmMigrator.migrate();
+    return ORM.Migrator.migrate();
   })
   .then((migrationResult) {
     // lets try to save some user
@@ -64,7 +48,7 @@ void main(){
     assert(saveResult > 0);
 
     // lets try simple one-row select by id
-    FindOne f = new FindOne(User)
+    ORM.FindOne f = new ORM.FindOne(User)
       ..whereEquals('id', 1); // whereEquals is just a shortcut for .where(new EqualsSQL('id', 1))
 
     return f.execute();
@@ -77,10 +61,10 @@ void main(){
     print(user.toString());
 
     // now lets try something not so simple
-    Find f = new Find(User)
-      ..where(new LowerThanSQL('id', 3)
-        .and(new EqualsSQL('givenName', 'Sergey')
-          .or(new EqualsSQL('familyName', 'Ustimenko'))
+    ORM.Find f = new ORM.Find(User)
+      ..where(new ORM.LowerThan('id', 3)
+        .and(new ORM.Equals('givenName', 'Sergey')
+          .or(new ORM.Equals('familyName', 'Ustimenko'))
         )
       )
       ..orderBy('id', 'DESC')

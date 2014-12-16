@@ -1,16 +1,16 @@
 part of dart_orm;
 
 
-class OrmMigrator {
+class Migrator {
   static Future migrate() {
     Completer completer = new Completer();
-    OrmDBAdapter adapter = OrmModel.ormAdapter;
+    DBAdapter adapter = Model.ormAdapter;
 
     // we store database schema and its version in
     // addition table called orm_info_table
     // So the first thing we want to do is check it.
     FindOne f = new FindOne(OrmInfoTable)
-      ..orderBy('currentVersion', OrderSQL.DESC)
+      ..orderBy('currentVersion', 'DESC')
       ..setLimit(1);
 
     f.execute()
@@ -22,10 +22,10 @@ class OrmMigrator {
       completer.complete(true);
     })
     .catchError((Exception err) {
-      if (err.message == OrmDBAdapter.ErrTableNotExist) {
+      if (err.message == DBAdapter.ErrTableNotExist) {
         // relation does not exists
         // create db
-        createSchemasFromScratch(adapter, OrmAnnotationsParser.ormClasses)
+        createSchemasFromScratch(adapter, AnnotationsParser.ormClasses)
         .then((bool completeResult){
           print('All orm tables were created from scratch.');
           completer.complete(true);
@@ -45,8 +45,8 @@ class OrmMigrator {
     return completer.future;
   }
 
-  static Future createSchemasFromScratch(OrmDBAdapter adapter,
-                                         Map<String, DBTableSQL> ormClasses){
+  static Future createSchemasFromScratch(DBAdapter adapter,
+                                         Map<String, Table> ormClasses){
     Completer completer = new Completer();
 
     // here will be all futures for creating all the tables.
@@ -54,7 +54,7 @@ class OrmMigrator {
     // list of strings for all tables sql. Every item will contain CREATE TABLE ...
     List<String> tableDefinitions = new List<String>();
 
-    for (DBTableSQL t in ormClasses.values) {
+    for (Table t in ormClasses.values) {
       futures.add(adapter.execute(t));
       tableDefinitions.add(SQLAdapter.constructTableSql(t));
     }

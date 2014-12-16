@@ -1,7 +1,7 @@
 part of dart_orm;
 
 
-abstract class OrmDBAdapter {
+abstract class DBAdapter {
   static final String ErrTableNotExist = 'Table does not exist';
   static final String ErrColumnNotExist = 'Column does not exist';
   static final String ErrUnknown = 'Unknown database error';
@@ -12,7 +12,7 @@ abstract class OrmDBAdapter {
    */
   String parseError(String errorCode);
 
-  dynamic query(SelectSQL selectSql);
+  dynamic query(Select selectSql);
 
   dynamic execute(dynamic sql);
 }

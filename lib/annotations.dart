@@ -54,8 +54,8 @@ class DBFieldDefault {
   String get defaultValue => _defaultValue;
 }
 
-class OrmAnnotationsParser {
-  static Map<String, DBTableSQL> _ormClasses = new Map<String, DBTableSQL>();
+class AnnotationsParser {
+  static Map<String, Table> _ormClasses = new Map<String, Table>();
 
   static get ormClasses => _ormClasses;
 
@@ -68,7 +68,7 @@ class OrmAnnotationsParser {
         String metaClassName = MirrorSystem.getName(metaInstanceMirror.type.simpleName);
 
         if (metaClassName == 'DBTable') {
-          DBTableSQL table = OrmAnnotationsParser.constructTable(classMirror);
+          Table table = AnnotationsParser.constructTable(classMirror);
           _ormClasses[modelClassName] = table;
         }
       }
@@ -97,30 +97,30 @@ class OrmAnnotationsParser {
     return classMirrors;
   }
 
-  static DBTableSQL getDBTableSQLForType(Type modelType) {
+  static Table getDBTableSQLForType(Type modelType) {
     ClassMirror modelMirror = reflectClass(modelType);
     String modelClassName = MirrorSystem.getName(modelMirror.simpleName);
     return _ormClasses[modelClassName];
   }
 
-  static DBTableSQL getDBTableSQLForClassName(String className) {
+  static Table getDBTableSQLForClassName(String className) {
     return _ormClasses[className];
   }
 
-  static DBTableSQL getDBTableSQLForInstance(OrmModel instance) {
+  static Table getDBTableSQLForInstance(Model instance) {
     InstanceMirror mirror = reflect(instance);
     String instanceClassName = MirrorSystem.getName(mirror.type.simpleName);
 
     return _ormClasses[instanceClassName];
   }
 
-  static dynamic getPropertyValueForField(DBFieldSQL field, OrmModel instance) {
+  static dynamic getPropertyValueForField(Field field, Model instance) {
     InstanceMirror mirror = reflect(instance);
     return mirror.getField(field.constructedFromPropertyName).reflectee;
   }
 
-  static DBFieldSQL constructField(InstanceMirror annotation, VariableMirror fieldMirror) {
-    DBFieldSQL field = new DBFieldSQL();
+  static Field constructField(InstanceMirror annotation, VariableMirror fieldMirror) {
+    Field field = new Field();
 
     var propertyMeta = fieldMirror.metadata;
 
@@ -138,28 +138,7 @@ class OrmAnnotationsParser {
       }
     }
 
-    if (field.type == null) {
-      String fieldDartType = getTypeName(fieldMirror.type);
-      switch (fieldDartType) {
-        case 'int':
-          if (field.isPrimaryKey) {
-            field.type = 'SERIAL';
-          }
-          else {
-            field.type = 'int';
-          }
-          break;
-        case 'String':
-          field.type = 'text';
-          break;
-        case 'bool':
-          field.type = 'bool';
-          break;
-        case 'LinkedHashMap':
-          field.type = 'json';
-          break;
-      }
-    }
+    field.propertyTypeName = getTypeName(fieldMirror.type);
 
     if (field.fieldName == null) {
       field.propertyName = getTypeName(fieldMirror);
@@ -173,8 +152,8 @@ class OrmAnnotationsParser {
   /**
    * Scans DB* annotations on class fields and constructs DBTableSQL instance
    */
-  static DBTableSQL constructTable(ClassMirror modelClassMirror) {
-    DBTableSQL table = new DBTableSQL();
+  static Table constructTable(ClassMirror modelClassMirror) {
+    Table table = new Table();
 
     table.className = _getTableName(modelClassMirror);
     table.fields = _getFields(modelClassMirror);
@@ -196,14 +175,14 @@ class OrmAnnotationsParser {
     return dbTableName;
   }
 
-  static List<DBFieldSQL> _getFields(ClassMirror modelClassMirror) {
-    List<DBFieldSQL> fields = new List<DBFieldSQL>();
+  static List<Field> _getFields(ClassMirror modelClassMirror) {
+    List<Field> fields = new List<Field>();
 
     for (var modelProperty in modelClassMirror.declarations.values) {
       for (var modelPropertyMeta in modelProperty.metadata) {
         String propertyMetaName = getTypeName(modelPropertyMeta.type);
         if (propertyMetaName == 'DBField') {
-          DBFieldSQL field = constructField(modelPropertyMeta, modelProperty);
+          Field field = constructField(modelPropertyMeta, modelProperty);
           fields.add(field);
         }
       }

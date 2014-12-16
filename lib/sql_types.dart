@@ -2,13 +2,16 @@ part of dart_orm;
 
 
 abstract class TypedSQL {
+  dynamic _value;
+  dynamic get value => _value;
+
+  TypedSQL(dynamic this._value);
+
   String toSql();
 }
 
 class RawSQL extends TypedSQL {
-  dynamic _value;
-
-  RawSQL(dynamic this._value);
+  RawSQL(dynamic value): super(value);
 
   String toSql() {
     return _value.toString();
@@ -16,9 +19,7 @@ class RawSQL extends TypedSQL {
 }
 
 class StringSQL extends TypedSQL {
-  String _value;
-
-  StringSQL(String this._value);
+  StringSQL(String value): super(value);
 
   String toSql() {
     return "'$_value'";
@@ -26,20 +27,18 @@ class StringSQL extends TypedSQL {
 }
 
 class NullSQL extends TypedSQL {
-  NullSQL();
+  NullSQL(): super(null);
 
   String toSql() {
-    return 'NULL';
+    return 'NULL'; // TODO: this must be in sql adapter
   }
 }
 
 class ListSQL extends TypedSQL {
-  List<dynamic> _list;
-
-  ListSQL(dynamic this._list);
+  ListSQL(List list): super(list);
 
   String toSql() {
-    return '(' + _list.join(',') + ')';
+    return '(' + _value.join(',') + ')'; // TODO: this must be in sql adapter
   }
 }
 

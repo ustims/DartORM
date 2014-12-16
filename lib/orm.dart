@@ -16,7 +16,7 @@ part 'migrator.dart';
 
 
 @DBTable()
-class OrmInfoTable extends OrmModel {
+class OrmInfoTable extends Model {
   @DBField()
   int currentVersion;
 
@@ -25,16 +25,16 @@ class OrmInfoTable extends OrmModel {
 }
 
 
-class OrmModel {
-  DBTableSQL _tableSql = null;
-  static OrmDBAdapter _sAdapter = null;
+class Model {
+  Table _tableSql = null;
+  static DBAdapter _sAdapter = null;
 
-  OrmModel() {
-    _tableSql = OrmAnnotationsParser.getDBTableSQLForInstance(this);
+  Model() {
+    _tableSql = AnnotationsParser.getDBTableSQLForInstance(this);
   }
 
 
-  static set ormAdapter(OrmDBAdapter adapter){
+  static set ormAdapter(DBAdapter adapter){
     _sAdapter = adapter;
   }
   static get ormAdapter => _sAdapter;
@@ -43,8 +43,8 @@ class OrmModel {
    * Returns DBFieldSQL instance
    * for primary key defined in this model.
    */
-  DBFieldSQL getPrimaryKeyField() {
-    for (DBFieldSQL field in _tableSql.fields) {
+  Field getPrimaryKeyField() {
+    for (Field field in _tableSql.fields) {
       if (field.isPrimaryKey) {
         return field;
       }
@@ -56,27 +56,27 @@ class OrmModel {
    * Returns primary key value for this instance.
    */
   getPrimaryKeyValue() {
-    DBFieldSQL field = getPrimaryKeyField();
+    Field field = getPrimaryKeyField();
     if (field != null) {
-      var instanceFieldValue = OrmAnnotationsParser.getPropertyValueForField(field, this);
+      var instanceFieldValue = AnnotationsParser.getPropertyValueForField(field, this);
       return instanceFieldValue;
     }
 
     return null;
   }
 
-  UpdateSQL getUpdateSQL() {
-    UpdateSQL updateSql = new UpdateSQL(_tableSql.tableName);
+  Update getUpdateSQL() {
+    Update updateSql = new Update(_tableSql.tableName);
 
-    for (DBFieldSQL field in _tableSql.fields) {
-      TypedSQL valueSql = getTypedSqlFromValue(OrmAnnotationsParser.getPropertyValueForField(field, this));
+    for (Field field in _tableSql.fields) {
+      TypedSQL valueSql = getTypedSqlFromValue(AnnotationsParser.getPropertyValueForField(field, this));
 
       if (field.isPrimaryKey) {
         if (valueSql == null) {
           throw new Exception('Cannot save model without id.');
         }
 
-        updateSql.where(new EqualsSQL(new RawSQL(field.fieldName), valueSql));
+        updateSql.where(new Equals(new RawSQL(field.fieldName), valueSql));
       }
       else {
         updateSql.set(field.fieldName, valueSql);
@@ -86,12 +86,12 @@ class OrmModel {
     return updateSql;
   }
 
-  InsertSQL getInsertSQL() {
-    InsertSQL insertSql = new InsertSQL(_tableSql.tableName);
+  Insert getInsertSQL() {
+    Insert insertSql = new Insert(_tableSql.tableName);
 
-    for (DBFieldSQL field in _tableSql.fields) {
+    for (Field field in _tableSql.fields) {
       if (!field.isPrimaryKey) {
-        TypedSQL valueSql = getTypedSqlFromValue(OrmAnnotationsParser.getPropertyValueForField(field, this));
+        TypedSQL valueSql = getTypedSqlFromValue(AnnotationsParser.getPropertyValueForField(field, this));
 
         insertSql.value(field.fieldName, valueSql);
       }
@@ -109,11 +109,11 @@ class OrmModel {
 
     var primaryKeyValue = getPrimaryKeyValue();
     if (primaryKeyValue != null) {
-      UpdateSQL updateSql = getUpdateSQL();
+      Update updateSql = getUpdateSQL();
       sql = updateSql.toSql();
     }
     else {
-      InsertSQL insertSql = getInsertSQL();
+      Insert insertSql = getInsertSQL();
 
       sql = insertSql.toSql();
     }
@@ -152,19 +152,19 @@ class OrmModel {
   }
 }
 
-class FindBase extends SelectSQL {
+class FindBase extends Select {
   Type _modelType;
-  DBTableSQL _tableSql;
+  Table _tableSql;
 
   FindBase(Type this._modelType): super(['*']) {
-    _tableSql = OrmAnnotationsParser.getDBTableSQLForType(_modelType);
+    _tableSql = AnnotationsParser.getDBTableSQLForType(_modelType);
     table(_tableSql.tableName);
   }
 
   whereEquals(String fieldName, var fieldValue) {
-    for (DBFieldSQL field in _tableSql.fields) {
+    for (Field field in _tableSql.fields) {
       if (fieldName == field.fieldName) {
-        where(new EqualsSQL(new RawSQL(fieldName), getTypedSqlFromValue(fieldValue)));
+        where(new Equals(new RawSQL(fieldName), getTypedSqlFromValue(fieldValue)));
       }
     }
   }
@@ -176,7 +176,7 @@ class FindBase extends SelectSQL {
 
     dynamic formatted = null;
 
-    for (DBFieldSQL field in _tableSql.fields) {
+    for (Field field in _tableSql.fields) {
       if(field.fieldName == variable || field.propertyName == variable) {
         formatted = new RawSQL(SQL.camelCaseToUnderscore(variable));
       }
@@ -189,18 +189,18 @@ class FindBase extends SelectSQL {
     return formatted;
   }
 
-  void _formatCondition(ConditionSQL cond) {
+  void _formatCondition(Condition cond) {
     cond.firstVar = _formatVariable(cond.firstVar);
     cond.secondVar = _formatVariable(cond.secondVar);
 
     if (cond.conditionQueue.length > 0) {
-      for (ConditionSQL queuedCond in cond.conditionQueue) {
+      for (Condition queuedCond in cond.conditionQueue) {
         _formatCondition(queuedCond);
       }
     }
   }
 
-  where(ConditionSQL cond) {
+  where(Condition cond) {
     _formatCondition(cond);
     super.where(cond);
   }
@@ -209,11 +209,11 @@ class FindBase extends SelectSQL {
     super.orderBy(_formatVariable(fieldName), order);
   }
 
-  static Future<OrmModel> _executeFindOne(Type modelType, SelectSQL sql) {
+  static Future<Model> _executeFindOne(Type modelType, Select sql) {
     Completer completer = new Completer();
 
     _executeFind(modelType, sql)
-    .then((List<OrmModel> foundModels) {
+    .then((List<Model> foundModels) {
       completer.complete(foundModels.first);
     })
     .catchError((err) {
@@ -223,22 +223,22 @@ class FindBase extends SelectSQL {
     return completer.future;
   }
 
-  static Future<List<OrmModel>> _executeFind(Type modelType, SelectSQL selectSql) {
+  static Future<List<Model>> _executeFind(Type modelType, Select selectSql) {
     Completer completer = new Completer();
 
-    DBTableSQL modelTableSQL = OrmAnnotationsParser.getDBTableSQLForType(modelType);
+    Table modelTableSQL = AnnotationsParser.getDBTableSQLForType(modelType);
     ClassMirror modelMirror = reflectClass(modelType);
 
-    List<OrmModel> foundInstances = new List<OrmModel>();
+    List<Model> foundInstances = new List<Model>();
 
     //OrmModel.ormAdapter.query(sql.toSql())
-    OrmModel.ormAdapter.query(selectSql)
+    Model.ormAdapter.query(selectSql)
     .then((rows) {
       for (var row in rows) {
         int fieldNumber = 0;
         InstanceMirror newInstance = modelMirror.newInstance(new Symbol(''), [], new Map());
 
-        for (DBFieldSQL field in modelTableSQL.fields) {
+        for (Field field in modelTableSQL.fields) {
           var fieldValue = row[fieldNumber++];
           newInstance.setField(field.constructedFromPropertyName, fieldValue);
         }
@@ -259,7 +259,7 @@ class FindBase extends SelectSQL {
 class Find extends FindBase {
   Find(Type modelType): super(modelType);
 
-  Future<List<OrmModel>> execute() {
+  Future<List<Model>> execute() {
     return FindBase._executeFind(_modelType, this);
   }
 }
@@ -267,7 +267,7 @@ class Find extends FindBase {
 class FindOne extends FindBase {
   FindOne(Type modelType): super(modelType);
 
-  Future<OrmModel> execute() {
+  Future<Model> execute() {
     return FindBase._executeFindOne(_modelType, this);
   }
 }

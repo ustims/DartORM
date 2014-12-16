@@ -7,11 +7,7 @@ class ConditionLogic {
   static String IN = 'IN';
 }
 
-class OrderSQL {
-  static final String ASC = 'ASC';
-  static final String DESC = 'DESC';
-}
-
+// TODO: move this somewhere
 class SQL {
   static String camelCaseToUnderscore(String camelCase){
     String result = '';
@@ -41,7 +37,7 @@ class SQL {
   }
 }
 
-class ConditionSQL {
+class Condition {
   /**
    * First variable for comparation.
    */
@@ -65,10 +61,10 @@ class ConditionSQL {
    */
   String _logic = null;
 
-  List<ConditionSQL> conditionQueue;
+  List<Condition> conditionQueue;
 
-  ConditionSQL(dynamic this._firstVar, this._condition, dynamic this._secondVar, [this._logic = null]) {
-    conditionQueue = new List<ConditionSQL>();
+  Condition(dynamic this._firstVar, this._condition, dynamic this._secondVar, [this._logic = null]) {
+    conditionQueue = new List<Condition>();
   }
 
   dynamic get firstVar => _firstVar;
@@ -91,50 +87,50 @@ class ConditionSQL {
     _logic = logic;
   }
 
-  ConditionSQL and(ConditionSQL cond) {
+  Condition and(Condition cond) {
     cond._logic = ConditionLogic.AND;
     conditionQueue.add(cond);
     return this;
   }
 
-  or(ConditionSQL cond) {
+  or(Condition cond) {
     cond._logic = ConditionLogic.OR;
     conditionQueue.add(cond);
     return this;
   }
 }
 
-class EqualsSQL extends ConditionSQL {
-  EqualsSQL(var firstVar, var secondVar, [String logic]): super(firstVar, '=', secondVar, logic);
+class Equals extends Condition {
+  Equals(var firstVar, var secondVar, [String logic]): super(firstVar, '=', secondVar, logic);
 }
 
-class InSQL extends ConditionSQL {
-  InSQL(var firstVar, var secondVar, [String logic]): super(firstVar, 'IN', secondVar, logic);
+class In extends Condition {
+  In(var firstVar, var secondVar, [String logic]): super(firstVar, 'IN', secondVar, logic);
 }
 
-class NotInSQL extends ConditionSQL {
-  NotInSQL(var firstVar, var secondVar, [String logic]): super(firstVar, 'NOT IN', secondVar, logic);
+class NotIn extends Condition {
+  NotIn(var firstVar, var secondVar, [String logic]): super(firstVar, 'NOT IN', secondVar, logic);
 }
 
-class NotEqualsSQL extends ConditionSQL {
-  NotEqualsSQL(var firstVar, var secondVar, [String logic]): super(firstVar, '<>', secondVar, logic);
+class NotEquals extends Condition {
+  NotEquals(var firstVar, var secondVar, [String logic]): super(firstVar, '<>', secondVar, logic);
 }
 
-class LowerThanSQL extends ConditionSQL {
-  LowerThanSQL(var firstVar, var secondVar, [String logic]): super(firstVar, '<', secondVar, logic);
+class LowerThan extends Condition {
+  LowerThan(var firstVar, var secondVar, [String logic]): super(firstVar, '<', secondVar, logic);
 }
 
-class BiggerThanSQL extends ConditionSQL {
-  BiggerThanSQL(var firstVar, var secondVar, [String logic]): super(firstVar, '>', secondVar, logic);
+class BiggerThan extends Condition {
+  BiggerThan(var firstVar, var secondVar, [String logic]): super(firstVar, '>', secondVar, logic);
 }
 
-class JoinSQL {
+class Join {
   String _joinType = null;
   String _tableName = null;
   String _tableAlias = null;
-  ConditionSQL _joinCondition = null;
+  Condition _joinCondition = null;
 
-  JoinSQL(this._joinType, this._tableName, this._tableAlias, this._joinCondition);
+  Join(this._joinType, this._tableName, this._tableAlias, this._joinCondition);
 
   //----------------------------------------------------------
   // Getters & setters
@@ -142,23 +138,23 @@ class JoinSQL {
   String get joinType => _joinType;
   String get tableName => _tableName;
   String get tableAlias => _tableAlias;
-  ConditionSQL get joinCondition => _joinCondition;
+  Condition get joinCondition => _joinCondition;
   //----------------------------------------------------------
   // /Getters & setters
   //----------------------------------------------------------
 }
 
-class SelectSQL extends SQL {
+class Select extends SQL {
   List<String> _columnsToSelect = null;
   String _tableName = null;
   String _tableAlias = null;
-  ConditionSQL _condition = null;
-  List<JoinSQL> _joins = new List<JoinSQL>();
+  Condition _condition = null;
+  List<Join> _joins = new List<Join>();
   Map<String, String> _sorts = new Map<String, String>();
   int _limit = null;
   int _offset = null;
 
-  SelectSQL(List<String> columnsToSelect) {
+  Select(List<String> columnsToSelect) {
     this._columnsToSelect = columnsToSelect;
   }
 
@@ -173,8 +169,8 @@ class SelectSQL extends SQL {
   String get tableName => _tableName;
   String get tableAlias => _tableAlias;
 
-  ConditionSQL get condition => _condition;
-  List<JoinSQL> get joins => _joins;
+  Condition get condition => _condition;
+  List<Join> get joins => _joins;
   Map<String, String> get sorts => _sorts;
 
   int get limit => _limit;
@@ -201,19 +197,19 @@ class SelectSQL extends SQL {
     this._tableAlias = tableAlias;
   }
 
-  join(String joinType, String tableName, String tableAlias, ConditionSQL joinCondition) {
-    this._joins.add(new JoinSQL(joinType, tableName, tableAlias, joinCondition));
+  join(String joinType, String tableName, String tableAlias, Condition joinCondition) {
+    this._joins.add(new Join(joinType, tableName, tableAlias, joinCondition));
   }
 
-  leftJoin(String tableName, String tableAlias, ConditionSQL joinCondition) {
-    this._joins.add(new JoinSQL('LEFT', tableName, tableAlias, joinCondition));
+  leftJoin(String tableName, String tableAlias, Condition joinCondition) {
+    this._joins.add(new Join('LEFT', tableName, tableAlias, joinCondition));
   }
 
-  rightJoin(String tableName, String tableAlias, ConditionSQL joinCondition) {
-    this._joins.add(new JoinSQL('RIGHT', tableName, tableAlias, joinCondition));
+  rightJoin(String tableName, String tableAlias, Condition joinCondition) {
+    this._joins.add(new Join('RIGHT', tableName, tableAlias, joinCondition));
   }
 
-  where(ConditionSQL cond) {
+  where(Condition cond) {
     this._condition = cond;
   }
 
@@ -222,31 +218,31 @@ class SelectSQL extends SQL {
   }
 }
 
-class UpdateSQL {
+class Update {
   String _tableName;
   LinkedHashMap<String, TypedSQL> _fieldsToUpdate = new LinkedHashMap<String, TypedSQL>();
-  ConditionSQL _condition;
+  Condition _condition;
 
-  UpdateSQL(String this._tableName);
+  Update(String this._tableName);
 
   String get tableName => tableName;
   LinkedHashMap<String, TypedSQL> get fieldsToUpdate => _fieldsToUpdate;
-  ConditionSQL get condition => _condition;
+  Condition get condition => _condition;
 
   set(String fieldName, TypedSQL fieldValue) {
     _fieldsToUpdate[fieldName] = fieldValue;
   }
 
-  where(ConditionSQL cond) {
+  where(Condition cond) {
     _condition = cond;
   }
 }
 
-class InsertSQL {
+class Insert {
   String _tableName;
   LinkedHashMap<String, TypedSQL> _fieldsToInsert = new LinkedHashMap<String, TypedSQL>();
 
-  InsertSQL(String this._tableName);
+  Insert(String this._tableName);
 
   LinkedHashMap<String, TypedSQL> get fieldsToInsert => _fieldsToInsert;
   String get tableName => _tableName;
@@ -259,7 +255,7 @@ class InsertSQL {
 /**
  * Represents database field.
  */
-class DBFieldSQL {
+class Field {
   bool _isPrimaryKey = false;
   bool _isUnique = false;
 
@@ -279,29 +275,30 @@ class DBFieldSQL {
    */
   String _propertyName;
 
+  /**
+   * Name of the Dart type this field is attached to.
+   */
+  String _propertyTypeName;
+
   dynamic _defaultValue;
   Symbol _constructedFromPropertyName;
 
   bool get isPrimaryKey => _isPrimaryKey;
-
   void set isPrimaryKey(bool isPrimaryKey) {
     _isPrimaryKey = isPrimaryKey;
   }
 
   bool get isUnique => _isUnique;
-
   void set isUnique(bool isUnique) {
     _isUnique = isUnique;
   }
 
   String get type => _type;
-
   void set type(String type) {
     _type = type;
   }
 
   String get fieldName => _fieldName;
-
   void set fieldName(String name) {
     _fieldName = name;
   }
@@ -312,20 +309,23 @@ class DBFieldSQL {
     _fieldName = SQL.camelCaseToUnderscore(propertyName);
   }
 
-  dynamic get defaultValue => _defaultValue;
+  String get propertyTypeName => _propertyTypeName;
+  void set propertyTypeName(String propertyTypeName){
+    _propertyTypeName = propertyTypeName;
+  }
 
+  dynamic get defaultValue => _defaultValue;
   void set defaultValue(dynamic defaultValue) {
     _defaultValue = defaultValue;
   }
 
   Symbol get constructedFromPropertyName => _constructedFromPropertyName;
-
   void set constructedFromPropertyName(Symbol constructedFrom) {
     _constructedFromPropertyName = constructedFrom;
   }
 }
 
-class DBTableSQL {
+class Table {
   /**
    * Model class name.
    */
@@ -336,7 +336,7 @@ class DBTableSQL {
    */
   String _tableName;
 
-  List<DBFieldSQL> _fields = new List<DBFieldSQL>();
+  List<Field> _fields = new List<Field>();
 
   String get className => _className;
   void set className(String className){
@@ -350,8 +350,8 @@ class DBTableSQL {
     _tableName = name;
   }
 
-  List<DBFieldSQL> get fields => _fields;
-  void set fields(List<DBFieldSQL> fields) {
+  List<Field> get fields => _fields;
+  void set fields(List<Field> fields) {
     _fields = fields;
   }
 }

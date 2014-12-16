@@ -9,7 +9,7 @@ class SQLAdapter {
 
   get connection => _connection;
 
-  dynamic query(SelectSQL selectSql) async {
+  dynamic query(Select selectSql) async {
     Completer completer = new Completer();
 
     String sqlQueryString = SQLAdapter.constructSelectSql(selectSql);
@@ -40,13 +40,13 @@ class SQLAdapter {
 
     String sqlQueryString = '';
 
-    if (operation is UpdateSQL) {
+    if (operation is Update) {
       sqlQueryString = SQLAdapter.constructUpdateSql(operation);
     }
-    else if (operation is InsertSQL) {
+    else if (operation is Insert) {
       sqlQueryString = SQLAdapter.constructInsertSql(operation);
     }
-    else if (operation is DBTableSQL) {
+    else if (operation is Table) {
         sqlQueryString = SQLAdapter.constructTableSql(operation);
       }
       else {
@@ -77,10 +77,10 @@ class SQLAdapter {
    * Uses _constructOneConditionSQL helper method for creating simple
    * conditions and appends all of them to a string by their condition.logic.
    */
-  static String constructConditionSql(ConditionSQL condition) {
+  static String constructConditionSql(Condition condition) {
     String sql = SQLAdapter._constructOneConditionSQL(condition);
 
-    for (ConditionSQL cond in condition.conditionQueue) {
+    for (Condition cond in condition.conditionQueue) {
       if (cond.logic != null) {
         sql += ' ' + cond.logic + ' (';
       }
@@ -102,7 +102,7 @@ class SQLAdapter {
    * Works by concantenating
    * condition.firstVar + condition.condition + condition.secondVar.
    */
-  static String _constructOneConditionSQL(ConditionSQL condition) {
+  static String _constructOneConditionSQL(Condition condition) {
     if (!(condition.firstVar is TypedSQL)) {
       condition.firstVar = getTypedSqlFromValue(condition.firstVar);
     }
@@ -125,7 +125,7 @@ class SQLAdapter {
    *  LIMIT {{selectSql.limit}}
    *  OFFSET {{selectSql.offset}}'
    */
-  static String constructSelectSql(SelectSQL selectSql) {
+  static String constructSelectSql(Select selectSql) {
     String sql = 'SELECT ';
     sql += selectSql.columnsToSelect.join(', \n       ');
     sql += ' \nFROM ' + selectSql.tableName;
@@ -135,7 +135,7 @@ class SQLAdapter {
     }
 
     if (selectSql.joins.length > 0) {
-      for (JoinSQL j in selectSql.joins) {
+      for (Join j in selectSql.joins) {
         sql += SQLAdapter.constructJoinSql(j);
       }
     }
@@ -167,7 +167,7 @@ class SQLAdapter {
   /**
    * JOIN sql statement constructor.
    */
-  static String constructJoinSql(JoinSQL join) {
+  static String constructJoinSql(Join join) {
     String sql = '';
     sql += '\n' + join.joinType.toUpperCase() + ' JOIN ';
     sql += join.tableName;
@@ -179,7 +179,7 @@ class SQLAdapter {
   /**
    * INSERT sql statement constructor.
    */
-  static String constructInsertSql(InsertSQL insert) {
+  static String constructInsertSql(Insert insert) {
     List<String> values = new List<String>();
 
     for (var v in insert.fieldsToInsert.values) {
@@ -204,7 +204,7 @@ class SQLAdapter {
   /**
    * UPDATE sql statement constructor.
    */
-  static String constructUpdateSql(UpdateSQL update) {
+  static String constructUpdateSql(Update update) {
     String sql = 'UPDATE ${update.tableName} ';
     sql += '\nSET ';
 
@@ -224,12 +224,12 @@ class SQLAdapter {
   /**
    * CREATE TABLE sql statement constructor.
    */
-  static String constructTableSql(DBTableSQL table) {
+  static String constructTableSql(Table table) {
     String sql = 'CREATE TABLE ${table.tableName} (';
 
     List<String> fieldDefinitions = new List<String>();
 
-    for (DBFieldSQL f in table.fields) {
+    for (Field f in table.fields) {
       String fieldDefinition = '\n    ' + SQLAdapter.constructFieldSql(f);
       fieldDefinitions.add(fieldDefinition);
     }
@@ -243,8 +243,30 @@ class SQLAdapter {
   /**
    * Field sql constructor helper for CREATE TABLE.
    */
-  static String constructFieldSql(DBFieldSQL field) {
-    String fieldDefinition = field.fieldName + ' ' + field.type;
+  static String constructFieldSql(Field field) {
+    String fieldType = '';
+
+    switch (field.propertyTypeName) {
+      case 'int':
+        if (field.isPrimaryKey) {
+          fieldType = 'SERIAL';
+        }
+        else {
+          fieldType = 'int';
+        }
+        break;
+      case 'String':
+        fieldType = 'text';
+        break;
+      case 'bool':
+        fieldType = 'bool';
+        break;
+      case 'LinkedHashMap':
+        fieldType = 'json';
+        break;
+    }
+
+    String fieldDefinition = field.fieldName + ' ' + fieldType;
 
     if (field.isPrimaryKey) {
       fieldDefinition += ' PRIMARY KEY';
