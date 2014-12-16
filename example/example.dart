@@ -20,68 +20,50 @@ class User extends ORM.Model {
   }
 }
 
-void main(){
+dynamic main() async {
   // This will scan current isolate
   // for classes annotated with DBTable
   // and store sql definitions for them in memory
   ORM.AnnotationsParser.initialize();
 
   var uri = 'postgres://dart_test:dart_test@localhost:5432/dart_test';
-  psql_connector.connect(uri).then((conn) {
-    ORM.Model.ormAdapter = new ORM.PostgresqlAdapter(conn);
-    //OrmModel.ormAdapter = new MemoryAdapter();
+  var psql_connection = await psql_connector.connect(uri);
 
-    // this will try to select current
-    // schema version from database, and if it is empty -
-    // create all the tables for found classes annotated with @DBTable
-    return ORM.Migrator.migrate();
-  })
-  .then((migrationResult) {
-    // lets try to save some user
-    User u = new User();
-    u.givenName = 'Sergey';
-    u.familyName = 'Ustimenko';
+  ORM.Model.ormAdapter = new ORM.PostgresqlAdapter(psql_connection);
+  bool migrationResult = await ORM.Migrator.migrate();
+  assert(migrationResult);
 
-    return u.save();
-  })
-  .then((saveResult) {
-    assert(saveResult > 0);
+  User u = new User();
+  u.givenName = 'Sergey';
+  u.familyName = 'Ustimenko';
 
-    // lets try simple one-row select by id
-    ORM.FindOne f = new ORM.FindOne(User)
-      ..whereEquals('id', 1); // whereEquals is just a shortcut for .where(new EqualsSQL('id', 1))
+  int saveResult = await u.save();
+  assert(saveResult > 0);
 
-    return f.execute();
-  })
-  .then((User user) {
-    assert(user.id == 1);
-    assert(user.givenName == 'Sergey');
+  // lets try simple one-row select by id
+  ORM.FindOne findOne = new ORM.FindOne(User)
+    ..whereEquals('id', 1); // whereEquals is just a shortcut for .where(new EqualsSQL('id', 1))
 
-    print('Found user:');
-    print(user.toString());
+  User foundUser = await findOne.execute();
+  assert(foundUser.id == 1);
+  assert(foundUser.givenName == 'Sergey');
+  print('Found user:');
+  print(foundUser.toString());
 
-    // now lets try something not so simple
-    ORM.Find f = new ORM.Find(User)
-      ..where(new ORM.LowerThan('id', 3)
-        .and(new ORM.Equals('givenName', 'Sergey')
-          .or(new ORM.Equals('familyName', 'Ustimenko'))
-        )
+  ORM.Find findMultiple = new ORM.Find(User)
+    ..where(new ORM.LowerThan('id', 3)
+      .and(new ORM.Equals('givenName', 'Sergey')
+        .or(new ORM.Equals('familyName', 'Ustimenko'))
       )
-      ..orderBy('id', 'DESC')
-      ..setLimit(10);
+    )
+    ..orderBy('id', 'DESC')
+    ..setLimit(10);
 
-    return f.execute();
-  })
-  .then((List foundUsers) {
-    assert(foundUsers.length > 0);
-    assert(foundUsers[0].givenName == 'Sergey');
+  List foundUsers = await findMultiple.execute();
 
-    print('Found list of users:');
-    print(foundUsers);
-  })
-  .catchError((err) {
-    print("Error!");
-    throw err;
-  });
+  assert(foundUsers.length > 0);
+  assert(foundUsers[0].givenName == 'Sergey');
 
+  print('Found list of users:');
+  print(foundUsers);
 }

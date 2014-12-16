@@ -1,3 +1,8 @@
+0.0.3
+-----
+
+- Adapters introdused and much renamings/refactorings.
+
 0.0.2
 -----
 
