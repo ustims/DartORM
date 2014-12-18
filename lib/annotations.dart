@@ -13,8 +13,10 @@ class DBTable {
 
   /**
    * New instance annotation.
-   * By default, database table name will be class name converted to underscores.
-   * One can override this by providing String parameter 'tableName' to constructor.
+   * By default, database table name
+   * will be class name converted to underscores.
+   * One can override this by providing
+   * String parameter 'tableName' to constructor.
    */
   const DBTable([String this._dbTableName]);
 
@@ -65,7 +67,8 @@ class AnnotationsParser {
     for (ClassMirror classMirror in classMirrorsWithMetadata) {
       for (InstanceMirror metaInstanceMirror in classMirror.metadata) {
         String modelClassName = MirrorSystem.getName(classMirror.simpleName);
-        String metaClassName = MirrorSystem.getName(metaInstanceMirror.type.simpleName);
+        String metaClassName = MirrorSystem.getName(
+            metaInstanceMirror.type.simpleName);
 
         if (metaClassName == 'DBTable') {
           Table table = AnnotationsParser.constructTable(classMirror);
@@ -128,12 +131,15 @@ class AnnotationsParser {
     return mirror.getField(field.constructedFromPropertyName).reflectee;
   }
 
-  static dynamic setPropertyValueForField(Field field, dynamic value, Model instance) {
+  static dynamic setPropertyValueForField(Field field,
+                                          dynamic value,
+                                          Model instance) {
     InstanceMirror mirror = reflect(instance);
     return mirror.setField(field.constructedFromPropertyName, value);
   }
 
-  static Field constructField(InstanceMirror annotation, VariableMirror fieldMirror) {
+  static Field constructField(InstanceMirror annotation,
+                              VariableMirror fieldMirror) {
     Field field = new Field();
 
     var propertyMeta = fieldMirror.metadata;
@@ -143,11 +149,9 @@ class AnnotationsParser {
 
       if (annotationTypeName == "DBFieldPrimaryKey") {
         field.isPrimaryKey = true;
-      }
-      if (annotationTypeName == "DBFieldType") {
+      } else if (annotationTypeName == "DBFieldType") {
         field.type = annotationMirror.reflectee.type;
-      }
-      if (annotationTypeName == 'DBFieldDefault') {
+      } else if (annotationTypeName == 'DBFieldDefault') {
         field.defaultValue = annotationMirror.reflectee.defaultValue;
       }
     }
@@ -155,9 +159,10 @@ class AnnotationsParser {
     field.propertyTypeName = getTypeName(fieldMirror.type);
 
     if (field.fieldName == null) {
-      field.propertyName = getTypeName(fieldMirror);
+      field.fieldName = getTypeName(fieldMirror);
     }
 
+    field.propertyName = getTypeName(fieldMirror);
     field.constructedFromPropertyName = fieldMirror.simpleName;
 
     return field;

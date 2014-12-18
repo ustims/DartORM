@@ -5,9 +5,9 @@ import 'dart:mirrors';
 import 'dart:async';
 import 'dart:collection';
 
-part 'sql.dart';
+part 'operations.dart';
 part 'annotations.dart';
-part 'sql_types.dart';
+part 'src/adapters/sql_types.dart';
 part 'adapter.dart';
 part 'src/adapters/sql.dart';
 part 'src/adapters/memory.dart';
@@ -34,9 +34,10 @@ class Model {
   }
 
 
-  static set ormAdapter(DBAdapter adapter){
+  static set ormAdapter(DBAdapter adapter) {
     _sAdapter = adapter;
   }
+
   static get ormAdapter => _sAdapter;
 
   /**
@@ -58,7 +59,8 @@ class Model {
   dynamic getPrimaryKeyValue() {
     Field field = getPrimaryKeyField();
     if (field != null) {
-      var instanceFieldValue = AnnotationsParser.getPropertyValueForField(field, this);
+      var instanceFieldValue = AnnotationsParser.getPropertyValueForField(
+          field, this);
       return instanceFieldValue;
     }
 
@@ -80,9 +82,9 @@ class Model {
    */
   Future insert() async {
     var primaryKeyValue = getPrimaryKeyValue();
-    if(primaryKeyValue != null){
+    if (primaryKeyValue != null) {
       throw new Exception('insert() should not be called' +
-        'on instances with not-null primary key value, use update() instead.');
+      'on instances with not-null primary key value, use update() instead.');
     }
 
     Insert insert = new Insert(_tableDefinition);
@@ -90,14 +92,17 @@ class Model {
     Symbol primaryKeyProperty = null;
     for (Field field in _tableDefinition.fields) {
       if (!field.isPrimaryKey) {
-        TypedSQL valueSql = getTypedSqlFromValue(AnnotationsParser.getPropertyValueForField(field, this));
-        insert.value(field.fieldName, valueSql);
+        insert.value(
+            field.fieldName,
+            AnnotationsParser.getPropertyValueForField(field, this)
+        );
       }
     }
 
     var newRecordId = await ormAdapter.insert(insert);
-
-    this.setPrimaryKeyValue(newRecordId);
+    if(this.getPrimaryKeyField() != null){
+      this.setPrimaryKeyValue(newRecordId);
+    }
 
     return newRecordId;
   }
@@ -110,21 +115,20 @@ class Model {
    */
   Future update() async {
     var primaryKeyValue = getPrimaryKeyValue();
-    if(primaryKeyValue = null){
+    if (primaryKeyValue == null) {
       throw new Exception('update() should not be called' +
       'on instances with null primary key value, use insert() instead.');
     }
 
-    Update update = new Update(_tableDefinition.tableName);
+    Update update = new Update(_tableDefinition);
 
     for (Field field in _tableDefinition.fields) {
-      TypedSQL valueSql = getTypedSqlFromValue(AnnotationsParser.getPropertyValueForField(field, this));
-
+      var value = AnnotationsParser.getPropertyValueForField(field, this);
       if (field.isPrimaryKey) {
-        update.where(new Equals(new RawSQL(field.fieldName), valueSql));
+        update.where(new Equals(field.fieldName, value));
       }
       else {
-        update.set(field.fieldName, valueSql);
+        update.set(field.fieldName, value);
       }
     }
 
@@ -136,13 +140,19 @@ class Model {
     Completer completer = new Completer();
 
     var primaryKeyValue = getPrimaryKeyValue();
+
     var operation = null;
     if (primaryKeyValue != null) {
-      return this.update();
+      var updateResult = this.update();
+      return updateResult;
     }
     else {
-      var newRecordId =  await this.insert();
-      if(newRecordId == this.getPrimaryKeyValue()){
+      var newRecordId = await this.insert();
+      if (this.getPrimaryKeyField() != null &&
+      newRecordId == this.getPrimaryKeyValue()) {
+        return true;
+      } else if (newRecordId == 0) {
+        // newRecordId will be 0 for models without primary key
         return true;
       }
     }
@@ -157,87 +167,45 @@ class FindBase extends Select {
 
   FindBase(Type this._modelType): super(['*']) {
     table = AnnotationsParser.getTableForType(_modelType);
-    //table(_table.tableName);
   }
 
   whereEquals(String fieldName, var fieldValue) {
     for (Field field in table.fields) {
       if (fieldName == field.fieldName) {
-        where(new Equals(new RawSQL(fieldName), getTypedSqlFromValue(fieldValue)));
+        where(new Equals(fieldName, fieldValue));
       }
     }
   }
 
-  dynamic _formatVariable(dynamic variable){
-    if(variable is TypedSQL){
-      return variable;
-    }
-
-    dynamic formatted = null;
-
-    for (Field field in table.fields) {
-      if(field.fieldName == variable || field.propertyName == variable) {
-        formatted = new RawSQL(SQL.camelCaseToUnderscore(variable));
-      }
-    }
-
-    if(formatted == null){
-      formatted = variable;
-    }
-
-    return formatted;
+  orderBy(String fieldName, String order) {
+    super.orderBy(fieldName, order);
   }
 
-  void _formatCondition(Condition cond) {
-    cond.firstVar = _formatVariable(cond.firstVar);
-    cond.secondVar = _formatVariable(cond.secondVar);
-
-    if (cond.conditionQueue.length > 0) {
-      for (Condition queuedCond in cond.conditionQueue) {
-        _formatCondition(queuedCond);
-      }
+  static Future<Model> _executeFindOne(Type modelType, Select sql) async {
+    List<Model> foundModels = await _executeFind(modelType, sql);
+    if (foundModels.length > 0) {
+      return foundModels.last;
+    } else {
+      return null;
     }
-  }
-
-  where(Condition cond) {
-    _formatCondition(cond);
-    super.where(cond);
-  }
-
-  orderBy(String fieldName, String order){
-    super.orderBy(_formatVariable(fieldName), order);
-  }
-
-  static Future<Model> _executeFindOne(Type modelType, Select sql) {
-    Completer completer = new Completer();
-
-    _executeFind(modelType, sql)
-    .then((List<Model> foundModels) {
-      completer.complete(foundModels.first);
-    })
-    .catchError((err) {
-      completer.completeError(err);
-    });
-
-    return completer.future;
   }
 
   static Future<List<Model>> _executeFind(Type modelType, Select selectSql) {
     Completer completer = new Completer();
 
-    Table modelTableSQL = AnnotationsParser.getTableForType(modelType);
+    Table modelTable = AnnotationsParser.getTableForType(modelType);
     ClassMirror modelMirror = reflectClass(modelType);
 
     List<Model> foundInstances = new List<Model>();
 
-    //OrmModel.ormAdapter.query(sql.toSql())
-    Model.ormAdapter.query(selectSql)
-    .then((rows) {
+    Model.ormAdapter.select(selectSql)
+    .then((List rows){
       for (var row in rows) {
         int fieldNumber = 0;
-        InstanceMirror newInstance = modelMirror.newInstance(new Symbol(''), [], new Map());
+        InstanceMirror newInstance = modelMirror.newInstance(
+            new Symbol(''), [], new Map());
 
-        for (Field field in modelTableSQL.fields) {
+        for (Field field in modelTable.fields) {
           var fieldValue = row[fieldNumber++];
           newInstance.setField(field.constructedFromPropertyName, fieldValue);
         }
@@ -247,8 +215,8 @@ class FindBase extends Select {
 
       completer.complete(foundInstances);
     })
-    .catchError((err) {
-      completer.completeError(err);
+    .catchError((e){
+      completer.completeError(e);
     });
 
     return completer.future;

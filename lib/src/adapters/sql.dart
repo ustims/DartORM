@@ -9,53 +9,30 @@ class SQLAdapter {
 
   get connection => _connection;
 
-  dynamic query(Select selectSql) async {
-    Completer completer = new Completer();
-
+  Future<List> select(Select selectSql) async {
     String sqlQueryString = SQLAdapter.constructSelectSql(selectSql);
-    print('[SQLAdapter] <query>');
-    print(sqlQueryString);
-    print('[SQLAdapter] </query>');
-
-    _connection.query(sqlQueryString)
-    .toList()
-    .then((result) {
-      print('[SQLAdapter] <result>');
-      print(result);
-      print('[SQLAdapter] </result>');
-      completer.complete(result);
-    })
-    .catchError((err) {
-      print('[SQLAdapter] <error>');
-      print(err);
-      print('[SQLAdapter] </error>');
-      completer.completeError(err);
-    });
-
-    return completer.future;
+    List results = await _connection.query(sqlQueryString).toList();
+    return results;
   }
 
   Future insert(Insert insert) async {
     String sqlQueryString = SQLAdapter.constructInsertSql(insert);
 
-    print('[SQLAdapter] Inserting row:');
-    print(sqlQueryString);
-
     var result = await _connection.query(sqlQueryString).toList();
-    return result[0][0];
+    if(result.length > 0){
+      return result[0][0];
+    }
+
+    return 0;
   }
 
   Future update(Update update) async {
     String sqlQueryString = SQLAdapter.constructUpdateSql(update);
-
-    print('[SQLAdapter] updating row:');
-    print(sqlQueryString);
-
     var affectedRows = await _connection.execute(sqlQueryString);
-
     return affectedRows;
   }
 
+  @deprecated()
   dynamic execute(dynamic operation) async {
     Completer completer = new Completer();
 
@@ -71,20 +48,8 @@ class SQLAdapter {
       throw new Exception('Unknown class passed to execute.');
     }
 
-    print('[SQLAdapter] Executing operation:');
-    print(sqlQueryString);
-
-    if(operation is Insert){
-      // since our inserts have 'RETURNING %primaryKey%'
-      // we should make 'query' instead of 'execute'
-      var result = await _connection.query(sqlQueryString).toList();
-      var createdId = result.last[0];
-      return createdId;
-    }
-    else{
-      var result = await _connection.execute(sqlQueryString);
-      return result;
-    }
+    var result = await _connection.execute(sqlQueryString);
+    return result;
   }
 
   /**
@@ -94,15 +59,16 @@ class SQLAdapter {
    * Uses _constructOneConditionSQL helper method for creating simple
    * conditions and appends all of them to a string by their condition.logic.
    */
-  static String constructConditionSql(Condition condition) {
-    String sql = SQLAdapter._constructOneConditionSQL(condition);
+  static String constructConditionSql(Condition condition,
+                                      [Table table = null]) {
+    String sql = SQLAdapter._constructOneConditionSQL(condition, table);
 
     for (Condition cond in condition.conditionQueue) {
       if (cond.logic != null) {
         sql += ' ' + cond.logic + ' (';
       }
 
-      sql += SQLAdapter.constructConditionSql(cond);
+      sql += SQLAdapter.constructConditionSql(cond, table);
 
       if (cond.logic != null) {
         sql += ')';
@@ -119,14 +85,31 @@ class SQLAdapter {
    * Works by concantenating
    * condition.firstVar + condition.condition + condition.secondVar.
    */
-  static String _constructOneConditionSQL(Condition condition) {
+  static String _constructOneConditionSQL(Condition condition,
+                                          [Table table = null]) {
     if (!(condition.firstVar is TypedSQL)) {
-      condition.firstVar = getTypedSqlFromValue(condition.firstVar);
+      if (table != null) {
+        condition.firstVar = SQLAdapter.getTypedSqlFromValue(
+            condition.firstVar, table);
+      } else {
+        condition.firstVar = SQLAdapter.getTypedSqlFromValue(
+            condition.firstVar);
+      }
+
     }
     if (!(condition.secondVar is TypedSQL)) {
-      condition.secondVar = getTypedSqlFromValue(condition.secondVar);
+      if (table != null) {
+        condition.secondVar = SQLAdapter.getTypedSqlFromValue(
+            condition.secondVar, table);
+      } else {
+        condition.secondVar = SQLAdapter.getTypedSqlFromValue(
+            condition.secondVar);
+      }
     }
-    return condition.firstVar.toSql() + ' ' + condition.condition + ' ' + condition.secondVar.toSql();
+
+    return condition.firstVar.toSql() + ' ' +
+    condition.condition + ' ' +
+    condition.secondVar.toSql();
   }
 
   /**
@@ -148,9 +131,9 @@ class SQLAdapter {
     sql += ' \nFROM ' + select.table.tableName;
 
     // TODO: if select has joins here we need to add table alias.
-//    if (select.table.tableAlias != null) {
-//      sql += ' AS ' + select.tableAlias;
-//    }
+    //if (select.table.tableAlias != null) {
+    //  sql += ' AS ' + select.tableAlias;
+    //}
 
     if (select.joins.length > 0) {
       for (Join j in select.joins) {
@@ -159,14 +142,19 @@ class SQLAdapter {
     }
 
     if (select.condition != null) {
-      sql += '\nWHERE ' + SQLAdapter.constructConditionSql(select.condition);
+      sql += '\nWHERE ' + SQLAdapter.constructConditionSql(
+          select.condition,
+          select.table
+      );
     }
 
     if (select.sorts.length > 0) {
       sql += '\nORDER BY ';
       List<String> sorts = new List<String>();
-      for (String sortField in select.sorts.keys) {
-        sorts.add(sortField + ' ' + select.sorts[sortField]);
+      for (String sortFieldName in select.sorts.keys) {
+        TypedSQL sortFieldSql = SQLAdapter.getTypedSqlFromValue(
+            sortFieldName, select.table);
+        sorts.add(sortFieldSql.toSql() + ' ' + select.sorts[sortFieldName]);
       }
       sql += sorts.join(', ');
     }
@@ -201,25 +189,24 @@ class SQLAdapter {
     List<String> values = new List<String>();
 
     for (var v in insert.fieldsToInsert.values) {
-      if (v is TypedSQL) {
-        values.add(v.toSql());
-      }
-      else {
-        values.add(v);
-      }
+      values.add(SQLAdapter.getTypedSqlFromValue(v).toSql());
     }
 
     String sql = 'INSERT INTO ${insert.table.tableName} (\n    ';
-    sql += insert.fieldsToInsert.keys.join(',\n    ');
+    sql += insert.fieldsToInsert.keys
+    .map((String fieldName) => SQL.camelCaseToUnderscore(fieldName))
+    .join(',\n    ');
     sql += ')\n';
     sql += 'VALUES (\n    ';
     sql += values.join(',\n    ');
     sql += '\n)';
 
     // TODO: this should be in postgres adapter
-    Field primaryKey = insert.table.getPrimaryKeyField();
-
-    sql += '\nRETURNING ${primaryKey.fieldName}';
+    Field primaryKeyField = insert.table.getPrimaryKeyField();
+    if(primaryKeyField != null) {
+      var primaryKeyName = SQL.camelCaseToUnderscore(primaryKeyField.fieldName);
+      sql += '\nRETURNING ${primaryKeyName}';
+    }
 
     return sql;
   }
@@ -228,18 +215,22 @@ class SQLAdapter {
    * UPDATE sql statement constructor.
    */
   static String constructUpdateSql(Update update) {
-    String sql = 'UPDATE ${update.tableName} ';
+    String sql = 'UPDATE ${update.table.tableName} ';
     sql += '\nSET ';
 
     List<String> fields = new List<String>();
 
-    for (String fieldName in update.fieldsToUpdate) {
-      fields.add(fieldName + ' = ' + update.fieldsToUpdate[fieldName].toSql());
+    for (String fieldName in update.fieldsToUpdate.keys) {
+      TypedSQL fieldValue = SQLAdapter.getTypedSqlFromValue(
+          update.fieldsToUpdate[fieldName]);
+      fieldName = SQL.camelCaseToUnderscore(fieldName);
+      fields.add(fieldName + ' = ' + fieldValue.toSql());
     }
 
     sql += fields.join(',\n    ');
 
-    sql += '\nWHERE ' + SQLAdapter.constructConditionSql(update.condition);
+    sql += '\nWHERE ' + SQLAdapter.constructConditionSql(
+        update.condition, update.table);
 
     return sql;
   }
@@ -289,7 +280,8 @@ class SQLAdapter {
         break;
     }
 
-    String fieldDefinition = field.fieldName + ' ' + fieldType;
+    String fieldDefinition = SQL.camelCaseToUnderscore(field.fieldName)
+    + ' ' + fieldType;
 
     if (field.isPrimaryKey) {
       fieldDefinition += ' PRIMARY KEY';
@@ -304,5 +296,44 @@ class SQLAdapter {
     }
 
     return fieldDefinition;
+  }
+
+  /**
+   * Wraps any value instance with approciate TypedSQL class
+   * which can be converted to SQL string.
+   *
+   * Tricky thing is about column names. For example is we receive 'id' string:
+   * is it the value which should be wrapped with quotes, or is it a column name
+   * which should not be wrapped with quotes.
+   *
+   * As a workaround this method receives optional [Table] argument.
+   * If it is provided and if instanceFieldValue is [String] it will be compared
+   * with all of the table field names.
+   */
+  static TypedSQL getTypedSqlFromValue(var instanceFieldValue,
+                                       [Table table=null]) {
+    if (instanceFieldValue is String && table != null) {
+      for (Field f in table.fields) {
+        if (f.fieldName == instanceFieldValue) {
+          // sql field names should be converted to underscore
+          String fieldName = SQL.camelCaseToUnderscore(instanceFieldValue);
+          return new RawSQL(fieldName);
+        }
+      }
+    }
+
+    TypedSQL valueSql;
+
+    if (instanceFieldValue == null) {
+      valueSql = new NullSQL();
+    } else if (instanceFieldValue is String) {
+      valueSql = new StringSQL(instanceFieldValue);
+    } else if (instanceFieldValue is List) {
+      valueSql = new ListSQL(instanceFieldValue);
+    } else {
+      valueSql = new RawSQL(instanceFieldValue);
+    }
+
+    return valueSql;
   }
 }

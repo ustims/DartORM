@@ -40,6 +40,7 @@ dynamic example() async {
 
   bool saveResult = await u.save();
   assert(saveResult);
+  print('Saved successfully');
 
   // lets try simple one-row select by id
   ORM.FindOne findOne = new ORM.FindOne(User)
@@ -50,6 +51,22 @@ dynamic example() async {
   assert(foundUser.givenName == 'Sergey');
   print('Found user:');
   print(foundUser.toString());
+
+  foundUser.givenName = 'yegreS';
+  await foundUser.save();
+
+  ORM.FindOne findOneModified = new ORM.FindOne(User)
+    ..whereEquals('id', 1);
+
+  User foundModifiedUser = await findOneModified.execute();
+  assert(foundModifiedUser.id == 1);
+  assert(foundModifiedUser.givenName == 'yegreS');
+  print('Found modified user:');
+  print(foundModifiedUser.toString());
+
+  // restore name back
+  foundUser.givenName = 'Sergey';
+  await foundUser.save();
 
   ORM.Find findMultiple = new ORM.Find(User)
     ..where(new ORM.LowerThan('id', 3)

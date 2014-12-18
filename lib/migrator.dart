@@ -2,8 +2,7 @@ part of dart_orm;
 
 
 class Migrator {
-  static Future migrate() {
-    Completer completer = new Completer();
+  static Future migrate() async {
     DBAdapter adapter = Model.ormAdapter;
 
     // we store database schema and its version in
@@ -13,45 +12,39 @@ class Migrator {
       ..orderBy('currentVersion', 'DESC')
       ..setLimit(1);
 
-    f.execute()
-    .then((OrmInfoTable ormInfoTable) {
+    try {
+      OrmInfoTable ormInfoTable = await f.execute();
       // TODO: check if existing schema in
       // tableDefinitions string is actual and run migrations
       // in dev mode or print diff in production mode
-      print("yahoo");
-      completer.complete(true);
-    })
-    .catchError((Exception err) {
-      if (err.message == DBAdapter.ErrTableNotExist) {
+      print("Tables exists. Later here will be check for defference.");
+      return true;
+    } catch (e) {
+      if (e.message != null && e.message == DBAdapter.ErrTableNotExist) {
         // relation does not exists
         // create db
-        createSchemasFromScratch(adapter, AnnotationsParser.ormClasses)
-        .then((bool completeResult){
-          print('All orm tables were created from scratch.');
-          completer.complete(true);
-        })
-        .catchError((err) {
-          print('Failed to create database orm tables.');
-          completer.completeError(err);
-        });
-      }
-      else{
+        bool migrationResult = await Migrator.createSchemasFromScratch(
+            adapter, AnnotationsParser.ormClasses);
+        print('All orm tables were created from scratch.');
+        return migrationResult;
+      } else {
         // its bad if we don't know what happened
         // because we miss all the ifs above, but lets notice about it.
-        completer.completeError(err);
+        throw e;
       }
-    });
+    }
 
-    return completer.future;
+    return false;
   }
 
   static Future createSchemasFromScratch(DBAdapter adapter,
-                                         Map<String, Table> ormClasses){
+                                         Map<String, Table> ormClasses) {
     Completer completer = new Completer();
 
     // here will be all futures for creating all the tables.
     List<Future> futures = new List<Future>();
-    // list of strings for all tables sql. Every item will contain CREATE TABLE ...
+    // list of strings for all tables sql.
+    // Every item will contain CREATE TABLE statement.
     List<String> tableDefinitions = new List<String>();
 
     for (Table t in ormClasses.values) {

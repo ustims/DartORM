@@ -2,6 +2,7 @@ part of dart_orm;
 
 /**
  * Slow and dumb in-memory storage.
+ * This should not be user at all. For some time %)
  */
 class MemoryAdapter extends DBAdapter {
   MemoryAdapter(): super();

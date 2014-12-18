@@ -7,26 +7,25 @@ class ConditionLogic {
   static String IN = 'IN';
 }
 
-// TODO: move this somewhere
 class SQL {
-  static String camelCaseToUnderscore(String camelCase){
+  static String camelCaseToUnderscore(String camelCase) {
     String result = '';
     int charNumber = 0;
     bool prevCharWasUpper = false;
-    for(int char in camelCase.codeUnits){
+    for (int char in camelCase.codeUnits) {
       String c = new String.fromCharCode(char);
       bool isUpper = c == c.toUpperCase();
 
-      if(isUpper && charNumber > 0 && !prevCharWasUpper){
+      if (isUpper && charNumber > 0 && !prevCharWasUpper) {
         result += '_' + c.toLowerCase();
         prevCharWasUpper = true;
       }
-      else{
+      else {
         result += c.toLowerCase();
-        if(charNumber > 0 && !isUpper){
+        if (charNumber > 0 && !isUpper) {
           prevCharWasUpper = false;
         }
-        else{
+        else {
           prevCharWasUpper = true;
         }
 
@@ -63,27 +62,34 @@ class Condition {
 
   List<Condition> conditionQueue;
 
-  Condition(dynamic this._firstVar, this._condition, dynamic this._secondVar, [this._logic = null]) {
+  Condition(dynamic this._firstVar,
+            String this._condition,
+            dynamic this._secondVar,
+            [this._logic = null]) {
     conditionQueue = new List<Condition>();
   }
 
   dynamic get firstVar => _firstVar;
-  void set firstVar(var value){
+
+  void set firstVar(var value) {
     _firstVar = value;
   }
 
   dynamic get secondVar => _secondVar;
-  void set secondVar(var value){
+
+  void set secondVar(var value) {
     _secondVar = value;
   }
 
   dynamic get condition => _condition;
-  void set condition(String condition){
+
+  void set condition(String condition) {
     _condition = condition;
   }
 
   String get logic => _logic;
-  void set logic(String logic){
+
+  void set logic(String logic) {
     _logic = logic;
   }
 
@@ -101,27 +107,33 @@ class Condition {
 }
 
 class Equals extends Condition {
-  Equals(var firstVar, var secondVar, [String logic]): super(firstVar, '=', secondVar, logic);
+  Equals(var firstVar, var secondVar, [String logic]):
+  super(firstVar, '=', secondVar, logic);
 }
 
 class In extends Condition {
-  In(var firstVar, var secondVar, [String logic]): super(firstVar, 'IN', secondVar, logic);
+  In(var firstVar, var secondVar, [String logic]):
+  super(firstVar, 'IN', secondVar, logic);
 }
 
 class NotIn extends Condition {
-  NotIn(var firstVar, var secondVar, [String logic]): super(firstVar, 'NOT IN', secondVar, logic);
+  NotIn(var firstVar, var secondVar, [String logic]):
+  super(firstVar, 'NOT IN', secondVar, logic);
 }
 
 class NotEquals extends Condition {
-  NotEquals(var firstVar, var secondVar, [String logic]): super(firstVar, '<>', secondVar, logic);
+  NotEquals(var firstVar, var secondVar, [String logic]):
+  super(firstVar, '<>', secondVar, logic);
 }
 
 class LowerThan extends Condition {
-  LowerThan(var firstVar, var secondVar, [String logic]): super(firstVar, '<', secondVar, logic);
+  LowerThan(var firstVar, var secondVar, [String logic]):
+  super(firstVar, '<', secondVar, logic);
 }
 
 class BiggerThan extends Condition {
-  BiggerThan(var firstVar, var secondVar, [String logic]): super(firstVar, '>', secondVar, logic);
+  BiggerThan(var firstVar, var secondVar, [String logic]):
+  super(firstVar, '>', secondVar, logic);
 }
 
 class Join {
@@ -149,18 +161,21 @@ class Select extends SQL {
   }
 
   Condition get condition => _condition;
+
   List<Join> get joins => _joins;
+
   Map<String, String> get sorts => _sorts;
 
-  void setLimit(int limit){
+  void setLimit(int limit) {
     this.limit = limit;
   }
 
-  void setOffset(int offset){
+  void setOffset(int offset) {
     offset = offset;
   }
 
-  join(String joinType, String tableName, String tableAlias, Condition joinCondition) {
+  join(String joinType, String tableName, String tableAlias,
+       Condition joinCondition) {
     this._joins.add(new Join(joinType, tableName, tableAlias, joinCondition));
   }
 
@@ -176,24 +191,25 @@ class Select extends SQL {
     this._condition = cond;
   }
 
-  orderBy(TypedSQL fieldName, String order) {
-    _sorts[fieldName.toSql()] = order;
+  orderBy(fieldName, String order) {
+    _sorts[fieldName] = order;
   }
 }
 
 class Update {
-  String _tableName;
-  LinkedHashMap<String, TypedSQL> _fieldsToUpdate = new LinkedHashMap<String, TypedSQL>();
+  Table table;
+
+  LinkedHashMap<String, dynamic> fieldsToUpdate =
+  new LinkedHashMap<String, dynamic>();
+
   Condition _condition;
 
-  Update(String this._tableName);
+  Update(Table this.table);
 
-  String get tableName => tableName;
-  LinkedHashMap<String, TypedSQL> get fieldsToUpdate => _fieldsToUpdate;
   Condition get condition => _condition;
 
-  set(String fieldName, TypedSQL fieldValue) {
-    _fieldsToUpdate[fieldName] = fieldValue;
+  set(String fieldName, dynamic fieldValue) {
+    fieldsToUpdate[fieldName] = fieldValue;
   }
 
   where(Condition cond) {
@@ -203,13 +219,14 @@ class Update {
 
 class Insert {
   Table table;
-  LinkedHashMap<String, TypedSQL> _fieldsToInsert = new LinkedHashMap<String, TypedSQL>();
+  LinkedHashMap<String, dynamic> _fieldsToInsert =
+  new LinkedHashMap<String, dynamic>();
 
   Insert(Table this.table);
 
-  LinkedHashMap<String, TypedSQL> get fieldsToInsert => _fieldsToInsert;
+  LinkedHashMap<String, dynamic> get fieldsToInsert => _fieldsToInsert;
 
-  value(String fieldName, TypedSQL fieldValue) {
+  value(String fieldName, dynamic fieldValue) {
     _fieldsToInsert[fieldName] = fieldValue;
   }
 }
@@ -227,15 +244,14 @@ class Field {
   String type;
 
   /**
-   * Database field name.
-   * This field is converted from _propertyName to underscore notation.
+   * Database column name.
    */
   String fieldName;
 
   /**
    * Model property name.
    */
-  String _propertyName;
+  String propertyName;
 
   /**
    * Name of the Dart type this field is attached to.
@@ -244,12 +260,6 @@ class Field {
 
   dynamic defaultValue;
   Symbol constructedFromPropertyName;
-
-  String get propertyName => _propertyName;
-  void set propertyName(String propertyName){
-    _propertyName = propertyName;
-    fieldName = SQL.camelCaseToUnderscore(propertyName);
-  }
 }
 
 class Table {
@@ -266,14 +276,15 @@ class Table {
   List<Field> fields = new List<Field>();
 
   String get className => _className;
-  void set className(String className){
+
+  void set className(String className) {
     _className = className;
     tableName = SQL.camelCaseToUnderscore(className);
   }
 
-  Field getPrimaryKeyField(){
-    for(Field f in fields){
-      if(f.isPrimaryKey){
+  Field getPrimaryKeyField() {
+    for (Field f in fields) {
+      if (f.isPrimaryKey) {
         return f;
       }
     }
