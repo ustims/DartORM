@@ -78,7 +78,7 @@ class MemoryAdapter extends DBAdapter {
     int primaryKey = 0;
     for (Table table in _records.keys) {
       // find the table we want to insert to
-      if (table.tableName == insert.tableName) {
+      if (table.tableName == insert.table.tableName) {
         // now lets find primary key field name
         for (Field field in table.fields) {
           if (field.isPrimaryKey) {

@@ -125,76 +125,39 @@ class BiggerThan extends Condition {
 }
 
 class Join {
-  String _joinType = null;
-  String _tableName = null;
-  String _tableAlias = null;
-  Condition _joinCondition = null;
+  String joinType = null;
+  String tableName = null;
+  String tableAlias = null;
+  Condition joinCondition = null;
 
-  Join(this._joinType, this._tableName, this._tableAlias, this._joinCondition);
-
-  //----------------------------------------------------------
-  // Getters & setters
-  //----------------------------------------------------------
-  String get joinType => _joinType;
-  String get tableName => _tableName;
-  String get tableAlias => _tableAlias;
-  Condition get joinCondition => _joinCondition;
-  //----------------------------------------------------------
-  // /Getters & setters
-  //----------------------------------------------------------
+  Join(this.joinType, this.tableName, this.tableAlias, this.joinCondition);
 }
 
 class Select extends SQL {
-  List<String> _columnsToSelect = null;
-  String _tableName = null;
-  String _tableAlias = null;
+  List<String> columnsToSelect = null;
+
+  Table table = null;
+
   Condition _condition = null;
   List<Join> _joins = new List<Join>();
   Map<String, String> _sorts = new Map<String, String>();
-  int _limit = null;
-  int _offset = null;
+  int limit = null;
+  int offset = null;
 
   Select(List<String> columnsToSelect) {
-    this._columnsToSelect = columnsToSelect;
+    this.columnsToSelect = columnsToSelect;
   }
-
-  //----------------------------------------------------------
-  // Getters & setters
-  //----------------------------------------------------------
-  List<String> get columnsToSelect => _columnsToSelect;
-  void set columnsToSelect(List<String> columnsList){
-    _columnsToSelect = columnsList;
-  }
-
-  String get tableName => _tableName;
-  String get tableAlias => _tableAlias;
 
   Condition get condition => _condition;
   List<Join> get joins => _joins;
   Map<String, String> get sorts => _sorts;
 
-  int get limit => _limit;
-  void set limit(int limit) {
-    this._limit = limit;
-  }
   void setLimit(int limit){
-    this._limit = limit;
+    this.limit = limit;
   }
 
-  int get offset => _offset;
-  void set offset(int offset) {
-    this._offset = offset;
-  }
   void setOffset(int offset){
-    _offset = offset;
-  }
-  //----------------------------------------------------------
-  // /Getters & setters
-  //----------------------------------------------------------
-
-  table(String tableName, [String tableAlias]) {
-    this._tableName = tableName;
-    this._tableAlias = tableAlias;
+    offset = offset;
   }
 
   join(String joinType, String tableName, String tableAlias, Condition joinCondition) {
@@ -239,13 +202,12 @@ class Update {
 }
 
 class Insert {
-  String _tableName;
+  Table table;
   LinkedHashMap<String, TypedSQL> _fieldsToInsert = new LinkedHashMap<String, TypedSQL>();
 
-  Insert(String this._tableName);
+  Insert(Table this.table);
 
   LinkedHashMap<String, TypedSQL> get fieldsToInsert => _fieldsToInsert;
-  String get tableName => _tableName;
 
   value(String fieldName, TypedSQL fieldValue) {
     _fieldsToInsert[fieldName] = fieldValue;
@@ -256,19 +218,19 @@ class Insert {
  * Represents database field.
  */
 class Field {
-  bool _isPrimaryKey = false;
-  bool _isUnique = false;
+  bool isPrimaryKey = false;
+  bool isUnique = false;
 
   /**
    * Raw database type string. For example: TIMESTAMP
    */
-  String _type;
+  String type;
 
   /**
    * Database field name.
    * This field is converted from _propertyName to underscore notation.
    */
-  String _fieldName;
+  String fieldName;
 
   /**
    * Model property name.
@@ -278,50 +240,15 @@ class Field {
   /**
    * Name of the Dart type this field is attached to.
    */
-  String _propertyTypeName;
+  String propertyTypeName;
 
-  dynamic _defaultValue;
-  Symbol _constructedFromPropertyName;
-
-  bool get isPrimaryKey => _isPrimaryKey;
-  void set isPrimaryKey(bool isPrimaryKey) {
-    _isPrimaryKey = isPrimaryKey;
-  }
-
-  bool get isUnique => _isUnique;
-  void set isUnique(bool isUnique) {
-    _isUnique = isUnique;
-  }
-
-  String get type => _type;
-  void set type(String type) {
-    _type = type;
-  }
-
-  String get fieldName => _fieldName;
-  void set fieldName(String name) {
-    _fieldName = name;
-  }
+  dynamic defaultValue;
+  Symbol constructedFromPropertyName;
 
   String get propertyName => _propertyName;
   void set propertyName(String propertyName){
     _propertyName = propertyName;
-    _fieldName = SQL.camelCaseToUnderscore(propertyName);
-  }
-
-  String get propertyTypeName => _propertyTypeName;
-  void set propertyTypeName(String propertyTypeName){
-    _propertyTypeName = propertyTypeName;
-  }
-
-  dynamic get defaultValue => _defaultValue;
-  void set defaultValue(dynamic defaultValue) {
-    _defaultValue = defaultValue;
-  }
-
-  Symbol get constructedFromPropertyName => _constructedFromPropertyName;
-  void set constructedFromPropertyName(Symbol constructedFrom) {
-    _constructedFromPropertyName = constructedFrom;
+    fieldName = SQL.camelCaseToUnderscore(propertyName);
   }
 }
 
@@ -334,24 +261,22 @@ class Table {
   /**
    * Database table name. Converted from _className to underscore notation.
    */
-  String _tableName;
+  String tableName;
 
-  List<Field> _fields = new List<Field>();
+  List<Field> fields = new List<Field>();
 
   String get className => _className;
   void set className(String className){
     _className = className;
-    _tableName = SQL.camelCaseToUnderscore(className);
+    tableName = SQL.camelCaseToUnderscore(className);
   }
 
-  String get tableName => _tableName;
-
-  void set tableName(String name) {
-    _tableName = name;
-  }
-
-  List<Field> get fields => _fields;
-  void set fields(List<Field> fields) {
-    _fields = fields;
+  Field getPrimaryKeyField(){
+    for(Field f in fields){
+      if(f.isPrimaryKey){
+        return f;
+      }
+    }
+    return null;
   }
 }

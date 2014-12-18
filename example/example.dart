@@ -20,7 +20,7 @@ class User extends ORM.Model {
   }
 }
 
-dynamic main() async {
+dynamic example() async {
   // This will scan current isolate
   // for classes annotated with DBTable
   // and store sql definitions for them in memory
@@ -30,6 +30,7 @@ dynamic main() async {
   var psql_connection = await psql_connector.connect(uri);
 
   ORM.Model.ormAdapter = new ORM.PostgresqlAdapter(psql_connection);
+  //ORM.Model.ormAdapter = new ORM.MemoryAdapter();
   bool migrationResult = await ORM.Migrator.migrate();
   assert(migrationResult);
 
@@ -37,8 +38,8 @@ dynamic main() async {
   u.givenName = 'Sergey';
   u.familyName = 'Ustimenko';
 
-  int saveResult = await u.save();
-  assert(saveResult > 0);
+  bool saveResult = await u.save();
+  assert(saveResult);
 
   // lets try simple one-row select by id
   ORM.FindOne findOne = new ORM.FindOne(User)
@@ -66,4 +67,8 @@ dynamic main() async {
 
   print('Found list of users:');
   print(foundUsers);
+}
+
+void main() {
+  example();
 }

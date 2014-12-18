@@ -9,9 +9,9 @@ part 'sql.dart';
 part 'annotations.dart';
 part 'sql_types.dart';
 part 'adapter.dart';
-part 'adapter_sql.dart';
-part 'adapter_memory.dart';
-part 'adapter_postgres.dart';
+part 'src/adapters/sql.dart';
+part 'src/adapters/memory.dart';
+part 'src/adapters/postgres.dart';
 part 'migrator.dart';
 
 
@@ -26,11 +26,11 @@ class OrmInfoTable extends Model {
 
 
 class Model {
-  Table _tableSql = null;
+  Table _tableDefinition = null;
   static DBAdapter _sAdapter = null;
 
   Model() {
-    _tableSql = AnnotationsParser.getDBTableSQLForInstance(this);
+    _tableDefinition = AnnotationsParser.getTableForInstance(this);
   }
 
 
@@ -44,7 +44,7 @@ class Model {
    * for primary key defined in this model.
    */
   Field getPrimaryKeyField() {
-    for (Field field in _tableSql.fields) {
+    for (Field field in _tableDefinition.fields) {
       if (field.isPrimaryKey) {
         return field;
       }
@@ -55,7 +55,7 @@ class Model {
   /**
    * Returns primary key value for this instance.
    */
-  getPrimaryKeyValue() {
+  dynamic getPrimaryKeyValue() {
     Field field = getPrimaryKeyField();
     if (field != null) {
       var instanceFieldValue = AnnotationsParser.getPropertyValueForField(field, this);
@@ -65,104 +65,103 @@ class Model {
     return null;
   }
 
-  Update getUpdateSQL() {
-    Update updateSql = new Update(_tableSql.tableName);
+  void setPrimaryKeyValue(dynamic value) {
+    Field field = getPrimaryKeyField();
+    if (field != null) {
+      AnnotationsParser.setPropertyValueForField(field, value, this);
+    }
+  }
 
-    for (Field field in _tableSql.fields) {
+  /**
+   * Inserts current model instance to database.
+   * Primary key should be empty.
+   *
+   * Throws [Exception] if model instance has not-null primary key.
+   */
+  Future insert() async {
+    var primaryKeyValue = getPrimaryKeyValue();
+    if(primaryKeyValue != null){
+      throw new Exception('insert() should not be called' +
+        'on instances with not-null primary key value, use update() instead.');
+    }
+
+    Insert insert = new Insert(_tableDefinition);
+
+    Symbol primaryKeyProperty = null;
+    for (Field field in _tableDefinition.fields) {
+      if (!field.isPrimaryKey) {
+        TypedSQL valueSql = getTypedSqlFromValue(AnnotationsParser.getPropertyValueForField(field, this));
+        insert.value(field.fieldName, valueSql);
+      }
+    }
+
+    var newRecordId = await ormAdapter.insert(insert);
+
+    this.setPrimaryKeyValue(newRecordId);
+
+    return newRecordId;
+  }
+
+  /**
+   * Updates this model instance data on database.
+   * This model instance primary key should have a not null value.
+   *
+   * Throws [Exception] if this model instance is null.
+   */
+  Future update() async {
+    var primaryKeyValue = getPrimaryKeyValue();
+    if(primaryKeyValue = null){
+      throw new Exception('update() should not be called' +
+      'on instances with null primary key value, use insert() instead.');
+    }
+
+    Update update = new Update(_tableDefinition.tableName);
+
+    for (Field field in _tableDefinition.fields) {
       TypedSQL valueSql = getTypedSqlFromValue(AnnotationsParser.getPropertyValueForField(field, this));
 
       if (field.isPrimaryKey) {
-        if (valueSql == null) {
-          throw new Exception('Cannot save model without id.');
-        }
-
-        updateSql.where(new Equals(new RawSQL(field.fieldName), valueSql));
+        update.where(new Equals(new RawSQL(field.fieldName), valueSql));
       }
       else {
-        updateSql.set(field.fieldName, valueSql);
+        update.set(field.fieldName, valueSql);
       }
     }
 
-    return updateSql;
+    var updateResult = await ormAdapter.update(update);
+    return updateResult;
   }
 
-  Insert getInsertSQL() {
-    Insert insertSql = new Insert(_tableSql.tableName);
-
-    for (Field field in _tableSql.fields) {
-      if (!field.isPrimaryKey) {
-        TypedSQL valueSql = getTypedSqlFromValue(AnnotationsParser.getPropertyValueForField(field, this));
-
-        insertSql.value(field.fieldName, valueSql);
-      }
-    }
-
-    return insertSql;
-  }
-
-  String getCreateTableSQL() {
-    return _tableSql.toSql();
-  }
-
-  String getSaveSql() {
-    String sql = '';
-
-    var primaryKeyValue = getPrimaryKeyValue();
-    if (primaryKeyValue != null) {
-      Update updateSql = getUpdateSQL();
-      sql = updateSql.toSql();
-    }
-    else {
-      Insert insertSql = getInsertSQL();
-
-      sql = insertSql.toSql();
-    }
-
-    return sql;
-  }
-
-  Future save() {
+  Future<bool> save() async {
     Completer completer = new Completer();
 
     var primaryKeyValue = getPrimaryKeyValue();
     var operation = null;
     if (primaryKeyValue != null) {
-      operation = getUpdateSQL();
+      return this.update();
     }
     else {
-      operation = getInsertSQL();
+      var newRecordId =  await this.insert();
+      if(newRecordId == this.getPrimaryKeyValue()){
+        return true;
+      }
     }
 
-    ormAdapter.execute(operation)
-    .then((result) {
-      if (result != 1) {
-        completer.completeError('Failed to save model!');
-      }
-
-      completer.complete(result);
-    })
-    .whenComplete(() {
-      //_connection.close();
-    })
-    .catchError((err) {
-      completer.completeError(err);
-    });
-
-    return completer.future;
+    return false;
   }
 }
 
 class FindBase extends Select {
   Type _modelType;
-  Table _tableSql;
+  Table table;
 
   FindBase(Type this._modelType): super(['*']) {
-    _tableSql = AnnotationsParser.getDBTableSQLForType(_modelType);
-    table(_tableSql.tableName);
+    table = AnnotationsParser.getTableForType(_modelType);
+    //table(_table.tableName);
   }
 
   whereEquals(String fieldName, var fieldValue) {
-    for (Field field in _tableSql.fields) {
+    for (Field field in table.fields) {
       if (fieldName == field.fieldName) {
         where(new Equals(new RawSQL(fieldName), getTypedSqlFromValue(fieldValue)));
       }
@@ -176,7 +175,7 @@ class FindBase extends Select {
 
     dynamic formatted = null;
 
-    for (Field field in _tableSql.fields) {
+    for (Field field in table.fields) {
       if(field.fieldName == variable || field.propertyName == variable) {
         formatted = new RawSQL(SQL.camelCaseToUnderscore(variable));
       }
@@ -226,7 +225,7 @@ class FindBase extends Select {
   static Future<List<Model>> _executeFind(Type modelType, Select selectSql) {
     Completer completer = new Completer();
 
-    Table modelTableSQL = AnnotationsParser.getDBTableSQLForType(modelType);
+    Table modelTableSQL = AnnotationsParser.getTableForType(modelType);
     ClassMirror modelMirror = reflectClass(modelType);
 
     List<Model> foundInstances = new List<Model>();

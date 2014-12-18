@@ -97,17 +97,26 @@ class AnnotationsParser {
     return classMirrors;
   }
 
-  static Table getDBTableSQLForType(Type modelType) {
+  /**
+   * Returns [Table] definition object for specified [Type]
+   */
+  static Table getTableForType(Type modelType) {
     ClassMirror modelMirror = reflectClass(modelType);
     String modelClassName = MirrorSystem.getName(modelMirror.simpleName);
     return _ormClasses[modelClassName];
   }
 
-  static Table getDBTableSQLForClassName(String className) {
+  /**
+   * Returns [Table] definition object for specified class name.
+   */
+  static Table getTableForClassName(String className) {
     return _ormClasses[className];
   }
 
-  static Table getDBTableSQLForInstance(Model instance) {
+  /**
+   * Returns [Table] definition object for specified model class instance.
+   */
+  static Table getTableForInstance(Model instance) {
     InstanceMirror mirror = reflect(instance);
     String instanceClassName = MirrorSystem.getName(mirror.type.simpleName);
 
@@ -117,6 +126,11 @@ class AnnotationsParser {
   static dynamic getPropertyValueForField(Field field, Model instance) {
     InstanceMirror mirror = reflect(instance);
     return mirror.getField(field.constructedFromPropertyName).reflectee;
+  }
+
+  static dynamic setPropertyValueForField(Field field, dynamic value, Model instance) {
+    InstanceMirror mirror = reflect(instance);
+    return mirror.setField(field.constructedFromPropertyName, value);
   }
 
   static Field constructField(InstanceMirror annotation, VariableMirror fieldMirror) {

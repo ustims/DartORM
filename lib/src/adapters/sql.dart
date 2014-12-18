@@ -35,39 +35,56 @@ class SQLAdapter {
     return completer.future;
   }
 
-  dynamic execute(dynamic operation) {
+  Future insert(Insert insert) async {
+    String sqlQueryString = SQLAdapter.constructInsertSql(insert);
+
+    print('[SQLAdapter] Inserting row:');
+    print(sqlQueryString);
+
+    var result = await _connection.query(sqlQueryString).toList();
+    return result[0][0];
+  }
+
+  Future update(Update update) async {
+    String sqlQueryString = SQLAdapter.constructUpdateSql(update);
+
+    print('[SQLAdapter] updating row:');
+    print(sqlQueryString);
+
+    var affectedRows = await _connection.execute(sqlQueryString);
+
+    return affectedRows;
+  }
+
+  dynamic execute(dynamic operation) async {
     Completer completer = new Completer();
 
     String sqlQueryString = '';
 
     if (operation is Update) {
       sqlQueryString = SQLAdapter.constructUpdateSql(operation);
-    }
-    else if (operation is Insert) {
+    } else if (operation is Insert) {
       sqlQueryString = SQLAdapter.constructInsertSql(operation);
+    } else if (operation is Table) {
+      sqlQueryString = SQLAdapter.constructTableSql(operation);
+    } else {
+      throw new Exception('Unknown class passed to execute.');
     }
-    else if (operation is Table) {
-        sqlQueryString = SQLAdapter.constructTableSql(operation);
-      }
-      else {
-        throw new Exception('Unknown class passed to execute.');
-      }
 
     print('[SQLAdapter] Executing operation:');
     print(sqlQueryString);
-    _connection.execute(sqlQueryString)
-    .then((result) {
-      print('[SQLAdapter] result:');
-      print(result);
-      completer.complete(result);
-    })
-    .catchError((err) {
-      print('[SQLAdapter] Error:');
-      print(err);
-      completer.completeError(err);
-    });
 
-    return completer.future;
+    if(operation is Insert){
+      // since our inserts have 'RETURNING %primaryKey%'
+      // we should make 'query' instead of 'execute'
+      var result = await _connection.query(sqlQueryString).toList();
+      var createdId = result.last[0];
+      return createdId;
+    }
+    else{
+      var result = await _connection.execute(sqlQueryString);
+      return result;
+    }
   }
 
   /**
@@ -125,40 +142,41 @@ class SQLAdapter {
    *  LIMIT {{selectSql.limit}}
    *  OFFSET {{selectSql.offset}}'
    */
-  static String constructSelectSql(Select selectSql) {
+  static String constructSelectSql(Select select) {
     String sql = 'SELECT ';
-    sql += selectSql.columnsToSelect.join(', \n       ');
-    sql += ' \nFROM ' + selectSql.tableName;
+    sql += select.columnsToSelect.join(', \n       ');
+    sql += ' \nFROM ' + select.table.tableName;
 
-    if (selectSql.tableAlias != null) {
-      sql += ' AS ' + selectSql.tableAlias;
-    }
+    // TODO: if select has joins here we need to add table alias.
+//    if (select.table.tableAlias != null) {
+//      sql += ' AS ' + select.tableAlias;
+//    }
 
-    if (selectSql.joins.length > 0) {
-      for (Join j in selectSql.joins) {
+    if (select.joins.length > 0) {
+      for (Join j in select.joins) {
         sql += SQLAdapter.constructJoinSql(j);
       }
     }
 
-    if (selectSql.condition != null) {
-      sql += '\nWHERE ' + SQLAdapter.constructConditionSql(selectSql.condition);
+    if (select.condition != null) {
+      sql += '\nWHERE ' + SQLAdapter.constructConditionSql(select.condition);
     }
 
-    if (selectSql.sorts.length > 0) {
+    if (select.sorts.length > 0) {
       sql += '\nORDER BY ';
       List<String> sorts = new List<String>();
-      for (String sortField in selectSql.sorts.keys) {
-        sorts.add(sortField + ' ' + selectSql.sorts[sortField]);
+      for (String sortField in select.sorts.keys) {
+        sorts.add(sortField + ' ' + select.sorts[sortField]);
       }
       sql += sorts.join(', ');
     }
 
-    if (selectSql.limit != null) {
-      sql += " LIMIT " + selectSql.limit.toString();
+    if (select.limit != null) {
+      sql += " LIMIT " + select.limit.toString();
     }
 
-    if (selectSql.offset != null) {
-      sql += " OFFSET " + selectSql.offset.toString();
+    if (select.offset != null) {
+      sql += " OFFSET " + select.offset.toString();
     }
 
     return sql;
@@ -191,12 +209,17 @@ class SQLAdapter {
       }
     }
 
-    String sql = 'INSERT INTO ${insert.tableName} (\n    ';
+    String sql = 'INSERT INTO ${insert.table.tableName} (\n    ';
     sql += insert.fieldsToInsert.keys.join(',\n    ');
     sql += ')\n';
     sql += 'VALUES (\n    ';
     sql += values.join(',\n    ');
-    sql += '\n);';
+    sql += '\n)';
+
+    // TODO: this should be in postgres adapter
+    Field primaryKey = insert.table.getPrimaryKeyField();
+
+    sql += '\nRETURNING ${primaryKey.fieldName}';
 
     return sql;
   }
