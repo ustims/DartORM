@@ -26,7 +26,7 @@ dynamic example() async {
   // and store sql definitions for them in memory
   ORM.AnnotationsParser.initialize();
 
-  var uri = 'postgres://dart_test:dart_test@localhost:5432/dart_test';
+  var uri = 'postgres://dart_orm_test_user:dart_orm_test_user@localhost:5432/dart_orm_test';
   var psql_connection = await psql_connector.connect(uri);
 
   ORM.Model.ormAdapter = new ORM.PostgresqlAdapter(psql_connection);

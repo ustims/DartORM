@@ -12,6 +12,8 @@ class SQLAdapter {
 
   Future<List> select(Select selectSql) async {
     String sqlQueryString = SQLAdapter.constructSelectSql(selectSql);
+    print('Executing query:');
+    print(sqlQueryString);
     List results = await _connection.query(sqlQueryString).toList();
     return results;
   }
@@ -55,12 +57,16 @@ class SQLAdapter {
 
     for (Condition cond in condition.conditionQueue) {
       if (cond.logic != null) {
-        sql += ' ' + cond.logic + ' (';
+        sql += ' ' + cond.logic + ' ';
+      }
+
+      if(cond.logic != null && cond.conditionQueue.length > 0){
+        sql += '(';
       }
 
       sql += SQLAdapter.constructConditionSql(cond, table);
 
-      if (cond.logic != null) {
+      if (cond.logic != null && cond.conditionQueue.length > 0) {
         sql += ')';
       }
     }

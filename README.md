@@ -9,7 +9,8 @@ Feel free to contribute!
 Feature tour
 ============
 
-If you want to jump to example code click here: https://github.com/ustims/DartORM/blob/master/example/example.dart
+If you want to jump to example code click here:
+https://github.com/ustims/DartORM/blob/master/example/example.dart
 
 Annotations
 -----------
@@ -108,6 +109,15 @@ This will result such statement executed on the database:
 ```sql
 SELECT *
 FROM users
-WHERE id < 3 AND (given_name = 'Sergey' OR (family_name = 'Ustimenko'))
+WHERE id < 3 AND (given_name = 'Sergey' OR family_name = 'Ustimenko')
 ORDER BY id DESC LIMIT 10
 ```
+
+Roadmap
+=======
+
+- memory & file adapters
+- mongodb adapter
+- models relations
+- mysql adapter
+- migration system
