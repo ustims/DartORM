@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dart_orm/orm.dart' as ORM;
 
 import 'package:postgresql/postgresql.dart' as psql_connector;
@@ -85,6 +87,8 @@ dynamic example() async {
 
   print('Found list of users:');
   print(foundUsers);
+
+  exit(0);
 }
 
 void main() {
