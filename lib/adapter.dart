@@ -6,7 +6,11 @@ abstract class DBAdapter {
   static final String ErrColumnNotExist = 'Column does not exist';
   static final String ErrUnknown = 'Unknown database error';
 
-  dynamic select(Select selectSql);
+  Future<List> select(Select selectSql);
 
-  dynamic execute(dynamic sql);
+  Future<int> insert(Insert insert);
+
+  Future<int> update(Update update);
+
+  Future createTable(Table table);
 }

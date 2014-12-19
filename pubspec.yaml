@@ -5,5 +5,9 @@ description: >
 author: Ustimenko Sergey <ustims@gmail.com>
 homepage: https://github.com/ustims/DartORM
 dependencies:
+
+dev_dependencies:
+  unittest: '>=0.10.0'
+  coverage: any
   postgresql: any
   mongo_dart: ">=0.1.45 <0.2.0"

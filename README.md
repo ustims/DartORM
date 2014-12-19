@@ -22,20 +22,12 @@ class User extends ORM.Model {
   // Every field that needs to be stored in database should be annotated with @DBField
   @ORM.DBField()
   @ORM.DBFieldPrimaryKey()
-  // Database field type can be overridden to database-engine specific type
-  // By default a property annotated with DBFieldPrimaryKey will set field type to SERIAL
-  // if you use postgres adapter.
-  // So this is for example.
-  @ORM.DBFieldType('SERIAL')
   int id;
 
   @ORM.DBField()
   String givenName;
 
-  // Database field name will be converted to underscore
-  // for example: family_name in this case,
-  // but this can be overridden by
-  // providing string argument to the annotation constructor
+  // column name can be overridden
   @ORM.DBField('family_name')
   String familyName;
 }
@@ -58,9 +50,10 @@ Migrations, schema versions and diffs will be implemented later.
 Inserts and updates
 -------------------
 
-Every ORM.Model has .save() method which will update/insert new row.
+Every ORM.Model has .save() method which will update/insert a new row.
 
-If class instance has 'id' field with not-null value, .save() will execute 'UPDATE' statement with 'WHERE id = $id'.
+If class instance has 'id' field with not-null value,
+.save() will execute 'UPDATE' statement with 'WHERE id = $id'.
 
 If class instance has null 'id' field, 'INSERT' statement will be executed.
 
@@ -89,7 +82,7 @@ Finding records
 
 ORM has two classes for finding records: Find and FindOne.
 
-Constructors receives a class that extends ORM.Model.
+Constructors receives a class that extend ORM.Model.
 
 ```dart
 

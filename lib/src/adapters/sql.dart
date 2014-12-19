@@ -1,5 +1,6 @@
 part of dart_orm;
 
+
 class SQLAdapter {
   dynamic _connection;
 
@@ -15,39 +16,28 @@ class SQLAdapter {
     return results;
   }
 
-  Future insert(Insert insert) async {
+  Future<int> insert(Insert insert) async {
     String sqlQueryString = SQLAdapter.constructInsertSql(insert);
 
     var result = await _connection.query(sqlQueryString).toList();
     if(result.length > 0){
+      // if we have any results, here will be returned new primary key
+      // of the inserted row
       return result[0][0];
     }
 
+    // if model does'nt have primary key we simply return 0
     return 0;
   }
 
-  Future update(Update update) async {
+  Future<int> update(Update update) async {
     String sqlQueryString = SQLAdapter.constructUpdateSql(update);
     var affectedRows = await _connection.execute(sqlQueryString);
     return affectedRows;
   }
 
-  @deprecated()
-  dynamic execute(dynamic operation) async {
-    Completer completer = new Completer();
-
-    String sqlQueryString = '';
-
-    if (operation is Update) {
-      sqlQueryString = SQLAdapter.constructUpdateSql(operation);
-    } else if (operation is Insert) {
-      sqlQueryString = SQLAdapter.constructInsertSql(operation);
-    } else if (operation is Table) {
-      sqlQueryString = SQLAdapter.constructTableSql(operation);
-    } else {
-      throw new Exception('Unknown class passed to execute.');
-    }
-
+  Future createTable(Table table) async {
+    String sqlQueryString = SQLAdapter.constructTableSql(table);
     var result = await _connection.execute(sqlQueryString);
     return result;
   }

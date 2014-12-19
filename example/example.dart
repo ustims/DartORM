@@ -44,7 +44,8 @@ dynamic example() async {
 
   // lets try simple one-row select by id
   ORM.FindOne findOne = new ORM.FindOne(User)
-    ..whereEquals('id', 1); // whereEquals is just a shortcut for .where(new EqualsSQL('id', 1))
+    // whereEquals is just a shortcut for .where(new ORM.Equals('id', 1))
+    ..whereEquals('id', 1);
 
   User foundUser = await findOne.execute();
   assert(foundUser.id == 1);

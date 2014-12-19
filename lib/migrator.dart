@@ -48,7 +48,7 @@ class Migrator {
     List<String> tableDefinitions = new List<String>();
 
     for (Table t in ormClasses.values) {
-      futures.add(adapter.execute(t));
+      futures.add(adapter.createTable(t));
       tableDefinitions.add(SQLAdapter.constructTableSql(t));
     }
 
