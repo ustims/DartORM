@@ -1,3 +1,5 @@
+[![Build Status](https://drone.io/github.com/ustims/DartORM/status.png)](https://drone.io/github.com/ustims/DartORM/latest)
+
 Dart ORM
 ========
 
