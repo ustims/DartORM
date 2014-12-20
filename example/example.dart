@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:dart_orm/orm.dart' as ORM;
 
-import 'package:postgresql/postgresql.dart' as psql_connector;
+import 'package:mongo_dart/mongo_dart.dart' as mongodb;
+import 'package:postgresql/postgresql.dart' as psqldb;
 
 @ORM.DBTable('users')
 class User extends ORM.Model {
@@ -28,11 +29,17 @@ dynamic example() async {
   // and store sql definitions for them in memory
   ORM.AnnotationsParser.initialize();
 
-  var uri = 'postgres://dart_orm_test_user:dart_orm_test_user@localhost:5432/dart_orm_test';
-  var psql_connection = await psql_connector.connect(uri);
+//  var uri = 'postgres://dart_orm_test_user:dart_orm_test_user@localhost:5432/dart_orm_test';
+//  var psql_connection = await psqldb.connect(uri);
+//  ORM.Model.ormAdapter = new ORM.PostgresqlAdapter(psql_connection);
 
-  ORM.Model.ormAdapter = new ORM.PostgresqlAdapter(psql_connection);
+  mongodb.Db mongo_db = new mongodb.Db("mongodb://dart_orm_test_user:dart_orm_test_user@127.0.0.1/dart_orm_test");
+  await mongo_db.open();
+
+  ORM.Model.ormAdapter = new ORM.MongoAdapter(mongo_db, mongodb.where, mongodb.DbCommand.createQueryDbCommand);
+
   //ORM.Model.ormAdapter = new ORM.MemoryAdapter();
+
   bool migrationResult = await ORM.Migrator.migrate();
   assert(migrationResult);
 

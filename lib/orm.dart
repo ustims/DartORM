@@ -12,6 +12,7 @@ part 'adapter.dart';
 part 'src/adapters/sql.dart';
 part 'src/adapters/memory.dart';
 part 'src/adapters/postgres.dart';
+part 'src/adapters/mongo.dart';
 part 'migrator.dart';
 
 
@@ -200,13 +201,12 @@ class FindBase extends Select {
 
     Model.ormAdapter.select(selectSql)
     .then((List rows){
-      for (var row in rows) {
-        int fieldNumber = 0;
+      for (Map<String, dynamic> row in rows) {
         InstanceMirror newInstance = modelMirror.newInstance(
             new Symbol(''), [], new Map());
 
         for (Field field in modelTable.fields) {
-          var fieldValue = row[fieldNumber++];
+          var fieldValue = row[field.fieldName];
           newInstance.setField(field.constructedFromPropertyName, fieldValue);
         }
 

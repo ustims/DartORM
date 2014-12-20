@@ -10,11 +10,29 @@ class SQLAdapter {
 
   get connection => _connection;
 
-  Future<List> select(Select selectSql) async {
-    String sqlQueryString = SQLAdapter.constructSelectSql(selectSql);
-    print('Executing query:');
-    print(sqlQueryString);
-    List results = await _connection.query(sqlQueryString).toList();
+  /**
+   * Returns list of maps which keys are column names
+   * and values are values from db.
+   */
+  Future<List<Map>> select(Select select) async {
+    String sqlQueryString = SQLAdapter.constructSelectSql(select);
+
+    List rawResults = await _connection.query(sqlQueryString).toList();
+    List<Map> results = new List<Map>();
+
+    // sql adapters usually returns a list of fields without field names
+    for(var rawRow in rawResults){
+      Map<String, dynamic> row = new Map<String, dynamic>();
+
+      int fieldNumber = 0;
+      for(Field f in select.table.fields){
+        row[f.fieldName] = rawRow[fieldNumber];
+        fieldNumber ++;
+      }
+
+      results.add(row);
+    }
+
     return results;
   }
 

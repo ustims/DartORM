@@ -20,7 +20,7 @@ class Migrator {
       print("Tables exists. Later here will be check for defference.");
       return true;
     } catch (e) {
-      if (e.message != null && e.message == DBAdapter.ErrTableNotExist) {
+      if (e is TableNotExistException) {
         // relation does not exists
         // create db
         bool migrationResult = await Migrator.createSchemasFromScratch(

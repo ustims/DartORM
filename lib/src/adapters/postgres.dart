@@ -4,21 +4,22 @@ part of dart_orm;
 class PostgresqlAdapter extends SQLAdapter with DBAdapter {
   PostgresqlAdapter(dynamic connection): super(connection);
 
-  Future select(Select selectSql) async {
+  Future select(Select select) async {
     try {
-      var result = await super.select(selectSql);
+      var result = await super.select(select);
       return result;
     } catch(e){
+      // TODO: catch here only postgresql exceptions
       switch (e.serverMessage.code) {
         case '42P01':
-          throw new Exception(DBAdapter.ErrTableNotExist);
+          throw new TableNotExistException();
           break;
         case '42703':
-          throw new Exception(DBAdapter.ErrColumnNotExist);
+          throw new ColumnNotExistException();
           break;
       }
 
-      throw new Exception(DBAdapter.ErrUnknown);
+      throw new UnknownAdapterException();
     }
   }
 }
