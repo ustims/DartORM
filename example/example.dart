@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:dart_orm/orm.dart' as ORM;
 
-import 'package:postgresql/postgresql.dart' as psql_connector;
+import 'package:mongo_dart/mongo_dart.dart' as mongodb;
+import 'package:postgresql/postgresql.dart' as psqldb;
 
 @ORM.DBTable('users')
 class User extends ORM.Model {
@@ -22,20 +23,7 @@ class User extends ORM.Model {
   }
 }
 
-dynamic example() async {
-  // This will scan current isolate
-  // for classes annotated with DBTable
-  // and store sql definitions for them in memory
-  ORM.AnnotationsParser.initialize();
-
-  var uri = 'postgres://dart_orm_test_user:dart_orm_test_user@localhost:5432/dart_orm_test';
-  var psql_connection = await psql_connector.connect(uri);
-
-  ORM.Model.ormAdapter = new ORM.PostgresqlAdapter(psql_connection);
-  //ORM.Model.ormAdapter = new ORM.MemoryAdapter();
-  bool migrationResult = await ORM.Migrator.migrate();
-  assert(migrationResult);
-
+dynamic testUser() async {
   User u = new User();
   u.givenName = 'Sergey';
   u.familyName = 'Ustimenko';
@@ -46,7 +34,7 @@ dynamic example() async {
 
   // lets try simple one-row select by id
   ORM.FindOne findOne = new ORM.FindOne(User)
-    // whereEquals is just a shortcut for .where(new ORM.Equals('id', 1))
+  // whereEquals is just a shortcut for .where(new ORM.Equals('id', 1))
     ..whereEquals('id', 1);
 
   User foundUser = await findOne.execute();
@@ -76,7 +64,7 @@ dynamic example() async {
       .and(new ORM.Equals('givenName', 'Sergey')
         .or(new ORM.Equals('familyName', 'Ustimenko'))
       )
-    )
+  )
     ..orderBy('id', 'DESC')
     ..setLimit(10);
 
@@ -87,6 +75,44 @@ dynamic example() async {
 
   print('Found list of users:');
   print(foundUsers);
+}
+
+dynamic example() async {
+  // This will scan current isolate
+  // for classes annotated with DBTable
+  // and store sql definitions for them in memory
+  ORM.AnnotationsParser.initialize();
+
+  var uri = 'postgres://dart_orm_test_user:dart_orm_test_user@localhost:5432/dart_orm_test';
+  var psql_connection = await psqldb.connect(uri);
+  ORM.Model.ormAdapter = new ORM.PostgresqlAdapter(psql_connection);
+  bool migrationResult = await ORM.Migrator.migrate();
+  assert(migrationResult);
+
+  print('\nTesting user model with postgresql adapter:');
+  await testUser();
+
+
+  mongodb.Db mongo_db = new mongodb.Db("mongodb://dart_orm_test_user:dart_orm_test_user@127.0.0.1/dart_orm_test");
+  await mongo_db.open();
+
+  // because of some library issues
+  // (orm library itself should not depend on specific db drivers)
+  // here we pass all needed methods to adapter.
+  // Need to refactor this later,
+  // maybe every adapter should be in separate library
+  // and depend on the driver it uses.
+  ORM.Model.ormAdapter = new ORM.MongoAdapter(
+      mongo_db,
+      mongodb.SelectorBuilder,
+      mongodb.ModifierBuilder,
+      mongodb.DbCommand.createQueryDbCommand);
+
+  migrationResult = await ORM.Migrator.migrate();
+  assert(migrationResult);
+
+  print('\nTesting user model with mongodb adapter:');
+  await testUser();
 
   exit(0);
 }

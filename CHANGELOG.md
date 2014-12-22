@@ -1,3 +1,7 @@
+0.0.5
+-----
+- Mongodb adapter and example added.
+
 0.0.4
 -----
 
