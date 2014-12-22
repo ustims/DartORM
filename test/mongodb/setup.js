@@ -1,6 +1,6 @@
 use dart_orm_test;
 
-if (db.version().toString().indexOf('2.5') > -1) {
+if (db.version().toString().indexOf('2.4') > -1) {
     db.addUser(
         {
             user: "dart_orm_test_user",
