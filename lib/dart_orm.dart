@@ -11,7 +11,6 @@ part 'src/adapters/sql_types.dart';
 part 'adapter.dart';
 part 'src/adapters/sql.dart';
 part 'src/adapters/memory.dart';
-part 'src/adapters/postgres.dart';
 part 'migrator.dart';
 
 

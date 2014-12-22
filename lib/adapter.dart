@@ -4,6 +4,8 @@ part of dart_orm;
  * Base interface with database operations methods.
  */
 abstract class DBAdapter {
+  Future connect();
+
   /**
    * Must return a list of maps which keys are column names
    * and values are values from db.

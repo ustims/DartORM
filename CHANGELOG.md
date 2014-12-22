@@ -1,3 +1,8 @@
+0.0.8
+-----
+
+- PostgreSQL adapter extracted to separate package.
+
 0.0.6
 -----
 

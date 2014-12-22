@@ -117,33 +117,19 @@ ORDER BY id DESC LIMIT 10
 
 Multiple database adapters support
 ----------------------------------
-Postgresql adapter is build-in for now but will be extracted soon.
 
-MongoDB adapter was extracted to separate package:
-https://pub.dartlang.org/packages/dart_orm_adapter_mongodb
+Currenty there are two adapters, both in work-in-progress status:
 
-and can be used like this:
+https://github.com/ustims/DartORM-PostgreSQL
 
-```dart
-import 'package:dart_orm_adapter_mongodb/dart_orm_adapter_mongodb.dart';
+https://github.com/ustims/DartORM-MongoDB
 
-...
-
-String mongoUser = 'dart_orm_test_user';
-String mongoPass = 'dart_orm_test_user';
-String mongoDBName = 'dart_orm_test';
-
-MongoDBAdapter mongoAdapter = new MongoDBAdapter(
-  'mongodb://$mongoUser:$mongoPass@127.0.0.1/$mongoDBName');
-await mongoAdapter.connect();
-
-ORM.Model.ormAdapter = mongoAdapter;
-```
 
 Roadmap
 =======
 
 - mysql adapter
+- multiple adapters support(should be possible to store models on different adapters)
 - memory & file adapters
 - models relations
 - migration system

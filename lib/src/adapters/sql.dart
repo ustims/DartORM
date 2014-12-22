@@ -4,11 +4,13 @@ part of dart_orm;
 class SQLAdapter {
   dynamic _connection;
 
-  SQLAdapter(dynamic connection) {
-    _connection = connection;
+  SQLAdapter() {
   }
 
   get connection => _connection;
+  void set connection(dynamic connection){
+    _connection = connection;
+  }
 
   /**
    * Returns list of maps which keys are column names
