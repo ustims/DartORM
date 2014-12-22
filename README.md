@@ -115,11 +115,35 @@ WHERE id < 3 AND (given_name = 'Sergey' OR family_name = 'Ustimenko')
 ORDER BY id DESC LIMIT 10
 ```
 
+Multiple database adapters support
+----------------------------------
+Postgresql adapter is build-in for now but will be extracted soon.
+
+MongoDB adapter was extracted to separate package:
+https://pub.dartlang.org/packages/dart_orm_adapter_mongodb
+
+and can be used like this:
+
+```dart
+import 'package:dart_orm_adapter_mongodb/dart_orm_adapter_mongodb.dart';
+
+...
+
+String mongoUser = 'dart_orm_test_user';
+String mongoPass = 'dart_orm_test_user';
+String mongoDBName = 'dart_orm_test';
+
+MongoDBAdapter mongoAdapter = new MongoDBAdapter(
+  'mongodb://$mongoUser:$mongoPass@127.0.0.1/$mongoDBName');
+await mongoAdapter.connect();
+
+ORM.Model.ormAdapter = mongoAdapter;
+```
+
 Roadmap
 =======
 
-- memory & file adapters
-- mongodb adapter
-- models relations
 - mysql adapter
+- memory & file adapters
+- models relations
 - migration system

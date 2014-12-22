@@ -1,9 +1,10 @@
 import 'dart:io';
 
-import 'package:dart_orm/orm.dart' as ORM;
+import 'package:dart_orm/dart_orm.dart' as ORM;
 
-import 'package:mongo_dart/mongo_dart.dart' as mongodb;
+//import 'package:mongo_dart/mongo_dart.dart' as mongodb;
 import 'package:postgresql/postgresql.dart' as psqldb;
+import 'package:dart_orm_adapter_mongodb/dart_orm_adapter_mongodb.dart';
 
 @ORM.DBTable('users')
 class User extends ORM.Model {
@@ -93,20 +94,15 @@ dynamic example() async {
   await testUser();
 
 
-  mongodb.Db mongo_db = new mongodb.Db("mongodb://dart_orm_test_user:dart_orm_test_user@127.0.0.1/dart_orm_test");
-  await mongo_db.open();
+  String mongoUser = 'dart_orm_test_user';
+  String mongoPass = 'dart_orm_test_user';
+  String mongoDBName = 'dart_orm_test';
 
-  // because of some library issues
-  // (orm library itself should not depend on specific db drivers)
-  // here we pass all needed methods to adapter.
-  // Need to refactor this later,
-  // maybe every adapter should be in separate library
-  // and depend on the driver it uses.
-  ORM.Model.ormAdapter = new ORM.MongoAdapter(
-      mongo_db,
-      mongodb.SelectorBuilder,
-      mongodb.ModifierBuilder,
-      mongodb.DbCommand.createQueryDbCommand);
+  MongoDBAdapter mongoAdapter = new MongoDBAdapter(
+      'mongodb://$mongoUser:$mongoPass@127.0.0.1/$mongoDBName');
+  await mongoAdapter.connect();
+
+  ORM.Model.ormAdapter = mongoAdapter;
 
   migrationResult = await ORM.Migrator.migrate();
   assert(migrationResult);

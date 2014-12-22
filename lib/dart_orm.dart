@@ -12,18 +12,7 @@ part 'adapter.dart';
 part 'src/adapters/sql.dart';
 part 'src/adapters/memory.dart';
 part 'src/adapters/postgres.dart';
-part 'src/adapters/mongo.dart';
 part 'migrator.dart';
-
-
-@DBTable()
-class OrmInfoTable extends Model {
-  @DBField()
-  int currentVersion;
-
-  @DBField()
-  String tableDefinitions;
-}
 
 
 class Model {

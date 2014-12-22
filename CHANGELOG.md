@@ -1,6 +1,11 @@
+0.0.6
+-----
+
+- MongoDB adapter extracted to separate package, example on its usage added.
+
 0.0.5
 -----
-- Mongodb adapter and example added.
+- MongoDB adapter and example added.
 
 0.0.4
 -----

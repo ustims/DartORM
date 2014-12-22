@@ -1,5 +1,13 @@
 part of dart_orm;
 
+@DBTable()
+class OrmInfoTable extends Model {
+  @DBField()
+  int currentVersion;
+
+  @DBField()
+  String tableDefinitions;
+}
 
 class Migrator {
   static Future migrate() async {
