@@ -4,6 +4,7 @@ import 'package:dart_orm/dart_orm.dart' as ORM;
 
 import 'package:dart_orm_adapter_postgresql/dart_orm_adapter_postgresql.dart';
 import 'package:dart_orm_adapter_mongodb/dart_orm_adapter_mongodb.dart';
+import 'package:dart_orm_adapter_mysql/dart_orm_adapter_mysql.dart';
 
 @ORM.DBTable('users')
 class User extends ORM.Model {
@@ -84,12 +85,8 @@ dynamic example() async {
   // and store sql definitions for them in memory
   ORM.AnnotationsParser.initialize();
 
-  String psqlUser = 'dart_orm_test_user';
-  String psqlPassword = 'dart_orm_test_user';
-  String psqlDBName = 'dart_orm_test';
-
   PostgresqlDBAdapter postgresqlAdapter = new PostgresqlDBAdapter(
-    'postgres://$psqlUser:$psqlPassword@localhost:5432/$psqlDBName');
+    'postgres://dart_orm_test:dart_orm_test@localhost:5432/dart_orm_test');
   await postgresqlAdapter.connect();
 
   ORM.Model.ormAdapter = postgresqlAdapter;
@@ -100,13 +97,8 @@ dynamic example() async {
   print('\nTesting user model with postgresql adapter:');
   await testUser();
 
-
-  String mongoUser = 'dart_orm_test_user';
-  String mongoPass = 'dart_orm_test_user';
-  String mongoDBName = 'dart_orm_test';
-
   MongoDBAdapter mongoAdapter = new MongoDBAdapter(
-      'mongodb://$mongoUser:$mongoPass@127.0.0.1/$mongoDBName');
+      'mongodb://dart_orm_test:dart_orm_test@127.0.0.1/dart_orm_test');
   await mongoAdapter.connect();
 
   ORM.Model.ormAdapter = mongoAdapter;
@@ -115,6 +107,17 @@ dynamic example() async {
   assert(migrationResult);
 
   print('\nTesting user model with mongodb adapter:');
+  await testUser();
+
+  MySQLDBAdapter mysqlAdapter = new MySQLDBAdapter(
+    'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test'
+  );
+  await mysqlAdapter.connect();
+  ORM.Model.ormAdapter = mysqlAdapter;
+  migrationResult = await ORM.Migrator.migrate();
+  assert(migrationResult);
+
+  print('\nTesting user model with mysql adapter:');
   await testUser();
 
   exit(0);

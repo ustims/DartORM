@@ -35,6 +35,7 @@ class AdapterException implements Exception {
   static final String ErrUnknown = 'Unknown database error';
 
   String message;
+
   AdapterException(this.message);
 }
 
@@ -47,5 +48,12 @@ class ColumnNotExistException extends AdapterException {
 }
 
 class UnknownAdapterException extends AdapterException {
-  UnknownAdapterException(): super(AdapterException.ErrUnknown);
+  dynamic originalException;
+
+  UnknownAdapterException(this.originalException):
+  super(AdapterException.ErrUnknown);
+
+  toString(){
+    return originalException.toString();
+  }
 }

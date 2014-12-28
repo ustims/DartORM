@@ -5,6 +5,8 @@ import 'dart:mirrors';
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:logging/logging.dart';
+
 part 'operations.dart';
 part 'annotations.dart';
 part 'src/adapters/sql_types.dart';

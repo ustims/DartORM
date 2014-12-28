@@ -194,6 +194,10 @@ class Select extends SQL {
   orderBy(fieldName, String order) {
     _sorts[fieldName] = order;
   }
+
+  String toString(){
+    return 'SELECT ' + columnsToSelect.join(',') + ' FROM ' + table.tableName;
+  }
 }
 
 class Update {

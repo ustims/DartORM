@@ -1,3 +1,13 @@
+0.0.9
+-----
+
+- Intergration tests added.
+- MySQL adapter usage added to example and integration tests.
+- PostgreSQL's 'RETURNING id' path of the insert query
+  moved to PostgreSQL adapter.
+- UnknownAdapterError now accepts original
+  db driver exception as constructor argument.
+
 0.0.8
 -----
 

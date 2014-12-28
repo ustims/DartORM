@@ -1,5 +1,8 @@
 part of dart_orm;
 
+final Logger log = new Logger('Migrator');
+
+
 @DBTable()
 class OrmInfoTable extends Model {
   @DBField()
@@ -8,6 +11,7 @@ class OrmInfoTable extends Model {
   @DBField()
   String tableDefinitions;
 }
+
 
 class Migrator {
   static Future migrate() async {
@@ -25,7 +29,7 @@ class Migrator {
       // TODO: check if existing schema in
       // tableDefinitions string is actual and run migrations
       // in dev mode or print diff in production mode
-      print("Tables exists. Later here will be check for defference.");
+      log.info("Tables exists. Later here will be check for defference.");
       return true;
     } catch (e) {
       if (e is TableNotExistException) {
@@ -33,7 +37,7 @@ class Migrator {
         // create db
         bool migrationResult = await Migrator.createSchemasFromScratch(
             adapter, AnnotationsParser.ormClasses);
-        print('All orm tables were created from scratch.');
+        log.info('All orm tables were created from scratch.');
         return migrationResult;
       } else {
         // its bad if we don't know what happened

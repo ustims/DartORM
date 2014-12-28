@@ -217,13 +217,6 @@ class SQLAdapter {
     sql += values.join(',\n    ');
     sql += '\n)';
 
-    // TODO: this should be in postgres adapter
-    Field primaryKeyField = insert.table.getPrimaryKeyField();
-    if(primaryKeyField != null) {
-      var primaryKeyName = SQL.camelCaseToUnderscore(primaryKeyField.fieldName);
-      sql += '\nRETURNING ${primaryKeyName}';
-    }
-
     return sql;
   }
 

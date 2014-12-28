@@ -1,10 +1,125 @@
-import 'package:unittest/unittest.dart';
-
-import 'package:dart_orm/orm.dart' as ORM;
 import 'dart:io';
+import 'dart:collection';
+import 'package:args/args.dart';
 
-void main() {
-  String psql
+import 'integration/integration_tests.dart';
 
-  exit(0);
+import 'package:logging/logging.dart';
+
+final Logger log = new Logger('TestRunner');
+
+void setupDBs(psql_user, psql_db, mysql_user) {
+
+  if (psql_user.length < 1 || psql_db.length < 1 || mysql_user.length < 1) {
+    throw new Exception('PSQL_USER, PSQL_DB, MYSQL_USER environment variables should be provided.');
+  }
+
+  String dbUserName = 'dart_orm_test';
+  String dbName = 'dart_orm_test';
+
+  // psql teardown
+  run('psql',
+  ['-c', 'DROP DATABASE $dbName;', '-U', psql_user, psql_db]);
+  run('psql',
+  ['-c', 'DROP ROLE $dbUserName;', '-U', psql_user, psql_db]);
+
+  // mysql teardown
+  run('mysql',
+  ['-e', 'DROP DATABASE $dbName;', '-u', mysql_user]);
+  run('mysql',
+  ['-e', 'DROP USER \'$dbUserName\'@\'localhost\';', '-u', mysql_user]);
+  run('mysql',
+  ['-e', 'FLUSH PRIVILEGES;', '-u', mysql_user]);
+
+  // mongodb teardown
+  run('mongo',
+  ['$dbName', '--eval', """
+  db.runCommand( { dropAllUsersFromDatabase: 1, writeConcern: { w: "majority" } } );
+  db.dropDatabase();
+  """]);
+
+  // psql setup
+  log.info('---- PSQL Setup -----');
+  run('psql',
+  ['-c', 'CREATE DATABASE $dbName;', '-U', 'ustims', "postgres"]);
+  run('psql',
+  ['-c', 'CREATE ROLE $dbUserName WITH PASSWORD \'$dbUserName\' LOGIN;', '-U', 'ustims', "postgres"]);
+  run('psql',
+  ['-c', 'GRANT ALL PRIVILEGES ON DATABASE $dbName TO $dbUserName;', '-U', 'ustims', "postgres"]);
+
+  log.info('---- MySQL Setup -----');
+  // mysql setup
+  run('mysql',
+  ['-e', 'CREATE DATABASE $dbName;', '-v', '-u', 'root']);
+  run('mysql',
+  ['-e', 'CREATE USER \'$dbUserName\'@\'localhost\' IDENTIFIED BY \'$dbUserName\';', '-v', '-u', 'root']);
+  run('mysql',
+  ['-e', 'GRANT ALL ON $dbName.* TO \'$dbUserName\'@\'localhost\';', '-v', '-u', 'root']);
+  run('mysql',
+  ['-e', 'FLUSH PRIVILEGES;', '-v', '-u', 'root']);
+
+  log.info('---- MongoDB Setup -----');
+  // mongodb setup
+  run('mongo',
+  ['$dbName', '--eval', """
+  if (db.version().toString().indexOf('2.4') > -1) {
+      db.addUser(
+          {
+              user: "$dbUserName",
+              pwd: "$dbUserName",
+              roles: ["readWrite"]
+          }
+      );
+  } else {
+      db.createUser(
+          {
+              user: "$dbUserName",
+              pwd: "$dbUserName",
+              roles: [{role: "userAdmin", db: "$dbName"}]
+          }
+      );
+  }
+  """]);
+}
+
+String run(String executable, List<String> arguments) {
+  var result = Process.runSync(executable, arguments);
+  if (result.stderr.length > 0) {
+    log.severe('$executable:' + result.stderr);
+  }
+  if (result.stdout.length > 0) {
+    log.info(result.stdout);
+  }
+  return result.stdout;
+}
+
+void main(List<String> arguments) {
+  String PSQL_USER = '';
+  String PSQL_DB = '';
+  String MYSQL_USER = '';
+
+  try {
+    for (String varName in Platform.environment.keys) {
+      if (varName == 'PSQL_USER') {
+        PSQL_USER = Platform.environment[varName];
+      }
+      if (varName == 'PSQL_DB') {
+        PSQL_DB = Platform.environment[varName];
+      }
+      if (varName == 'MYSQL_USER') {
+        MYSQL_USER = Platform.environment[varName];
+      }
+    }
+  } catch (e) {
+    log.shout(e);
+  }
+
+  Logger.root.level = Level.INFO;
+  Logger.root.onRecord.listen((LogRecord rec) {
+    print('[${rec.loggerName}] ${rec.level.name}: ${rec.time}: ${rec.message}');
+  });
+
+  setupDBs(PSQL_USER, PSQL_DB, MYSQL_USER);
+
+  IntegrationTests.execute();
 }
