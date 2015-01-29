@@ -1,3 +1,8 @@
+0.0.10
+------
+
+- Minor improvements and bugfixes.
+
 0.0.9
 -----
 

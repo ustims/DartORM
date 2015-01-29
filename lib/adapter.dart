@@ -26,9 +26,20 @@ abstract class DBAdapter {
    */
   Future<int> update(Update update);
 
+  /**
+   * Must create a table/collection.
+   */
   Future createTable(Table table);
 }
 
+/**
+ * Unified database exception wrapper.
+ *
+ * Database drivers raise exceptions in theirs own format
+ * with own error codes etc.
+ *
+ * Adapter implementation must wrap all those exceptions to one of the below.
+ */
 class AdapterException implements Exception {
   static final String ErrTableNotExist = 'Table does not exist';
   static final String ErrColumnNotExist = 'Column does not exist';

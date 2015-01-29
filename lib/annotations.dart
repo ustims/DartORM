@@ -25,6 +25,7 @@ class DBTable {
 
 /**
  * Database field annotation.
+ *
  * Every property of class that needs to be stored to database
  * should be annotated with @DBField
  */

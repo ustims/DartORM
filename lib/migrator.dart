@@ -61,7 +61,9 @@ class Migrator {
 
     for (Table t in ormClasses.values) {
       futures.add(adapter.createTable(t));
-      tableDefinitions.add(SQLAdapter.constructTableSql(t));
+      // TODO: adapter should provide a way to get hash or info about current
+      // schema so we can diff them
+      //tableDefinitions.add(adapter.constructTableSql(t));
     }
 
     Future.wait(futures)
@@ -76,6 +78,8 @@ class Migrator {
       completer.complete(true);
     })
     .catchError((err) {
+      log.severe('Failed to create tables.');
+      log.severe(err);
       completer.completeError(err);
     });
 

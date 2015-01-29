@@ -8,7 +8,8 @@ class SQLAdapter {
   }
 
   get connection => _connection;
-  void set connection(dynamic connection){
+
+  void set connection(dynamic connection) {
     _connection = connection;
   }
 
@@ -23,11 +24,11 @@ class SQLAdapter {
     List<Map> results = new List<Map>();
 
     // sql adapters usually returns a list of fields without field names
-    for(var rawRow in rawResults){
+    for (var rawRow in rawResults) {
       Map<String, dynamic> row = new Map<String, dynamic>();
 
       int fieldNumber = 0;
-      for(Field f in select.table.fields){
+      for (Field f in select.table.fields) {
         row[f.fieldName] = rawRow[fieldNumber];
         fieldNumber ++;
       }
@@ -42,7 +43,7 @@ class SQLAdapter {
     String sqlQueryString = SQLAdapter.constructInsertSql(insert);
 
     var result = await _connection.query(sqlQueryString).toList();
-    if(result.length > 0){
+    if (result.length > 0) {
       // if we have any results, here will be returned new primary key
       // of the inserted row
       return result[0][0];
@@ -59,7 +60,7 @@ class SQLAdapter {
   }
 
   Future createTable(Table table) async {
-    String sqlQueryString = SQLAdapter.constructTableSql(table);
+    String sqlQueryString = this.constructTableSql(table);
     var result = await _connection.execute(sqlQueryString);
     return result;
   }
@@ -80,7 +81,7 @@ class SQLAdapter {
         sql += ' ' + cond.logic + ' ';
       }
 
-      if(cond.logic != null && cond.conditionQueue.length > 0){
+      if (cond.logic != null && cond.conditionQueue.length > 0) {
         sql += '(';
       }
 
@@ -247,46 +248,71 @@ class SQLAdapter {
   /**
    * CREATE TABLE sql statement constructor.
    */
-  static String constructTableSql(Table table) {
+  String constructTableSql(Table table) {
     String sql = 'CREATE TABLE ${table.tableName} (';
 
     List<String> fieldDefinitions = new List<String>();
 
     for (Field f in table.fields) {
-      String fieldDefinition = '\n    ' + SQLAdapter.constructFieldSql(f);
+      String fieldDefinition = '\n    ' + this.constructFieldSql(f);
       fieldDefinitions.add(fieldDefinition);
     }
 
     sql += fieldDefinitions.join(',');
+
+    sql += '\n' + this.getConstraintsSql(table);
+
     sql += '\n);';
 
     return sql;
   }
 
+  String getConstraintsSql(Table table) {
+    return '';
+  }
+
+  Map<Field, Field> getRelatedFields(Table table) {
+    Map<Field, Field> relatedFields = new Map<Field, Field>();
+    for (Field f in table.fields) {
+      Field relatedField = this.getRelationField(f);
+      if (relatedField != null) {
+        relatedFields[f] = relatedField;
+      }
+    }
+    return relatedFields;
+  }
+
+  Field getRelationField(field) {
+    Table relatedTable = AnnotationsParser.getTableForClassName(
+        field.propertyTypeName);
+    if (relatedTable != null) {
+      return relatedTable.getPrimaryKeyField();
+    } else {
+      return null;
+    }
+  }
+
   /**
    * Field sql constructor helper for CREATE TABLE.
    */
-  static String constructFieldSql(Field field) {
+  String constructFieldSql(Field field) {
     String fieldType = '';
 
-    switch (field.propertyTypeName) {
-      case 'int':
-        if (field.isPrimaryKey) {
-          fieldType = 'SERIAL';
-        }
-        else {
-          fieldType = 'int';
-        }
-        break;
-      case 'String':
-        fieldType = 'text';
-        break;
-      case 'bool':
-        fieldType = 'bool';
-        break;
-      case 'LinkedHashMap':
-        fieldType = 'json';
-        break;
+    Field relatedField = this.getRelationField(field);
+
+    if (relatedField != null) {
+      // seems that we have foreign key here
+      // so we need to set type based on the type
+      // of the related table's primary key
+      fieldType = this.convertDartType(relatedField);
+    }
+    else {
+      if (field.isPrimaryKey) {
+        fieldType = 'SERIAL';
+      }
+      else {
+        fieldType = this.convertDartType(field);
+      }
     }
 
     String fieldDefinition = SQL.camelCaseToUnderscore(field.fieldName)
@@ -305,6 +331,25 @@ class SQLAdapter {
     }
 
     return fieldDefinition;
+  }
+
+  String convertDartType(Field field) {
+    String dbTypeName = '';
+    switch (field.propertyTypeName) {
+      case 'int':
+        dbTypeName = 'int';
+        break;
+      case 'String':
+        dbTypeName = 'text';
+        break;
+      case 'bool':
+        dbTypeName = 'bool';
+        break;
+      case 'LinkedHashMap':
+        dbTypeName = 'json';
+        break;
+    }
+    return dbTypeName;
   }
 
   /**
