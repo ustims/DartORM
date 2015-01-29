@@ -95,9 +95,9 @@ Future findOneTestCase() async {
   expect(found.givenName, 'Sergey');
 }
 
-Future findTestCase() async {
+Future findMultipleTestCase() async {
   ORM.Find f = new ORM.Find(User)
-    ..where(new ORM.LowerThan('id', '4'))
+    ..where(new ORM.LowerThan('id', 4))
     ..orderBy('id', 'DESC')
     ..setLimit(2);
 
@@ -105,6 +105,7 @@ Future findTestCase() async {
   expect(results.length, 2);
   expect(results[0].id, 3);
   expect(results[1].id, 2);
+  //expect(results[2].id, 1); -- this should not exist since we set limit to 2
 }
 
 class IntegrationTests {
@@ -116,7 +117,7 @@ class IntegrationTests {
       await findOneTestCase();
     });
     test('FindMultiple', () async {
-      await findTestCase();
+      await findMultipleTestCase();
     });
     test('Save', () async {
       await saveTestCase();
