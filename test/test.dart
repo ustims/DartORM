@@ -41,20 +41,20 @@ void setupDBs(psql_user, psql_db, mysql_user) {
   // psql setup
   log.info('---- PSQL Setup -----');
   run('psql',
-  ['-c', 'CREATE DATABASE $dbName;', '-U', 'ustims', "postgres"]);
+  ['-c', 'CREATE DATABASE $dbName;', '-U', psql_user, psql_db]);
   run('psql',
-  ['-c', 'CREATE ROLE $dbUserName WITH PASSWORD \'$dbUserName\' LOGIN;', '-U', 'ustims', "postgres"]);
+  ['-c', 'CREATE ROLE $dbUserName WITH PASSWORD \'$dbUserName\' LOGIN;', '-U', psql_user, psql_db]);
   run('psql',
-  ['-c', 'GRANT ALL PRIVILEGES ON DATABASE $dbName TO $dbUserName;', '-U', 'ustims', "postgres"]);
+  ['-c', 'GRANT ALL PRIVILEGES ON DATABASE $dbName TO $dbUserName;', '-U', psql_user, psql_db]);
 
   log.info('---- MySQL Setup -----');
   // mysql setup
   run('mysql',
   ['-e', 'CREATE DATABASE $dbName;', '-v', '-u', 'root']);
   run('mysql',
-  ['-e', 'CREATE USER \'$dbUserName\'@\'localhost\' IDENTIFIED BY \'$dbUserName\';', '-v', '-u', 'root']);
+  ['-e', 'CREATE USER \'$dbUserName\'@\'localhost\' IDENTIFIED BY \'$dbUserName\';', '-v', '-u', mysql_user]);
   run('mysql',
-  ['-e', 'GRANT ALL ON $dbName.* TO \'$dbUserName\'@\'localhost\';', '-v', '-u', 'root']);
+  ['-e', 'GRANT ALL ON $dbName.* TO \'$dbUserName\'@\'localhost\';', '-v', '-u', mysql_user]);
   run('mysql',
   ['-e', 'FLUSH PRIVILEGES;', '-v', '-u', 'root']);
 
