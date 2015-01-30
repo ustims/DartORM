@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:collection';
 import 'package:args/args.dart';
+import 'package:unittest/unittest.dart';
 
 import 'integration/integration_tests.dart';
 
@@ -121,5 +122,19 @@ void main(List<String> arguments) {
 
   setupDBs(PSQL_USER, PSQL_DB, MYSQL_USER);
 
+  unittestConfiguration = new ShutdownConf();
+
   IntegrationTests.execute();
+}
+
+
+class ShutdownConf extends SimpleConfiguration {
+  void onDone(bool success) {
+    super.onDone(success);
+    if(success){
+      exit(0);
+    } else {
+      exit(1);
+    }
+  }
 }
