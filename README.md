@@ -1,4 +1,4 @@
-[![Build Status](https://drone.io/github.com/ustims/DartORM/status.png)](https://drone.io/github.com/ustims/DartORM/latest)
+[![Build Status](https://drone.io/github.com/ustims/DartORM/status.png?random=1)](https://drone.io/github.com/ustims/DartORM/latest)
 
 Dart ORM
 ========
@@ -118,18 +118,20 @@ ORDER BY id DESC LIMIT 10
 Multiple database adapters support
 ----------------------------------
 
-Currenty there are two adapters, both in work-in-progress status:
+Currenty there are three adapters in work-in-progress status:
 
 https://github.com/ustims/DartORM-PostgreSQL
 
+https://github.com/ustims/DartORM-MySQL
+
 https://github.com/ustims/DartORM-MongoDB
+
 
 
 Roadmap
 =======
 
-- mysql adapter
+- model relations (in progress)
 - multiple adapters support(should be possible to store models on different adapters)
-- memory & file adapters
-- models relations
 - migration system
+- memory & file adapters
