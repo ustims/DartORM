@@ -41,3 +41,12 @@ class ListSQL extends TypedSQL {
     return '(' + _value.join(',') + ')';
   }
 }
+
+class DateTimeSQL extends TypedSQL {
+  DateTimeSQL(DateTime datetime): super(datetime);
+
+  String toSql() {
+    DateTime d = _value;
+    return '\'${d.toIso8601String()}\'';
+  }
+}

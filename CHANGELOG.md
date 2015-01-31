@@ -1,3 +1,8 @@
+0.0.11
+------
+
+- DateTime support added.
+
 0.0.10
 ------
 

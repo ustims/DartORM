@@ -23,6 +23,9 @@ class User extends ORM.Model {
   @ORM.DBField()
   String familyName;
 
+  @ORM.DBField()
+  DateTime created;
+
   String toString() {
     return 'User { id: $id, ' +
     'givenName: \'$givenName\', familyName: \'$familyName\' }';
@@ -108,6 +111,43 @@ Future findMultipleTestCase() async {
   //expect(results[2].id, 1); -- this should not exist since we set limit to 2
 }
 
+Future dateTimeTestCase() async {
+  User u = new User();
+  u.givenName = 'Sergey';
+  DateTime now = new DateTime.now();
+  u.created = now;
+
+  await u.save();
+
+  ORM.FindOne f = new ORM.FindOne(User)
+    ..whereEquals('id', u.id);
+  User saved = await f.execute();
+
+  int difference = saved.created.difference(now).inMilliseconds;
+  // TODO: investigate why db drivers or dart makes this
+  expect(difference < 1000, true);
+
+  User futureUser = new User();
+  futureUser.givenName = 'Bilbo';
+  futureUser.created = new DateTime(2500, DateTime.JANUARY, 1, 12, 12, 12);
+  await futureUser.save();
+
+  // TODO: timezones need to be tested.
+
+  ORM.Find findLowerThan = new ORM.Find(User)
+    ..where(new ORM.LowerThan('created', new DateTime.now()));
+
+  List foundLowerThan = await findLowerThan.execute();
+  expect(foundLowerThan.length, 1);
+
+  ORM.Find findBiggerThan = new ORM.Find(User)
+    ..where(new ORM.BiggerThan('created',
+      new DateTime(now.year, now.month, now.day, now.hour, now.minute + 5)));
+
+  List foundBiggerThan = await findBiggerThan.execute();
+  expect(foundBiggerThan.length, 1);
+}
+
 class IntegrationTests {
   static allTests() {
     test('PrimaryKey', () async {
@@ -121,6 +161,9 @@ class IntegrationTests {
     });
     test('Save', () async {
       await saveTestCase();
+    });
+    test('DateTime', () async {
+      await dateTimeTestCase();
     });
   }
 

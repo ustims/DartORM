@@ -115,9 +115,11 @@ void main(List<String> arguments) {
     log.shout(e);
   }
 
-  Logger.root.level = Level.INFO;
+  Logger.root.level = Level.FINEST;
   Logger.root.onRecord.listen((LogRecord rec) {
-    print('[${rec.loggerName}] ${rec.level.name}: ${rec.time}: ${rec.message}');
+    if(rec.loggerName.contains('DartORM')){
+      print('[${rec.loggerName}] ${rec.level.name}: ${rec.time}: ${rec.message}');
+    }
   });
 
   setupDBs(PSQL_USER, PSQL_DB, MYSQL_USER);

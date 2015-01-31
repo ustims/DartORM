@@ -384,6 +384,8 @@ class SQLAdapter {
       valueSql = new StringSQL(instanceFieldValue);
     } else if (instanceFieldValue is List) {
       valueSql = new ListSQL(instanceFieldValue);
+    } else if(instanceFieldValue is DateTime){
+      valueSql = new DateTimeSQL(instanceFieldValue);
     } else {
       valueSql = new RawSQL(instanceFieldValue);
     }
