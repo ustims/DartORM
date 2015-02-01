@@ -163,7 +163,7 @@ class IntegrationTests {
       await saveTestCase();
     });
     test('DateTime', () async {
-      //await dateTimeTestCase();
+      await dateTimeTestCase();
     });
   }
 
