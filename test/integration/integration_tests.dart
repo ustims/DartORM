@@ -135,7 +135,8 @@ Future dateTimeTestCase() async {
   // TODO: timezones need to be tested.
 
   ORM.Find findLowerThan = new ORM.Find(User)
-    ..where(new ORM.LowerThan('created', new DateTime.now()));
+    ..where(new ORM.LowerThan('created',
+      new DateTime(now.year, now.month, now.day, now.hour, now.minute + 5)));
 
   List foundLowerThan = await findLowerThan.execute();
   expect(foundLowerThan.length, 1);
@@ -163,7 +164,7 @@ class IntegrationTests {
       await saveTestCase();
     });
     test('DateTime', () async {
-      //await dateTimeTestCase();
+      await dateTimeTestCase();
     });
   }
 

@@ -1,3 +1,8 @@
+0.0.12
+------
+
+- SQLAdapter sql construction methods refactored to be non-static.
+
 0.0.11
 ------
 

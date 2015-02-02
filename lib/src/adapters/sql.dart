@@ -18,7 +18,7 @@ class SQLAdapter {
    * and values are values from db.
    */
   Future<List<Map>> select(Select select) async {
-    String sqlQueryString = SQLAdapter.constructSelectSql(select);
+    String sqlQueryString = this.constructSelectSql(select);
 
     List rawResults = await _connection.query(sqlQueryString).toList();
     List<Map> results = new List<Map>();
@@ -40,7 +40,7 @@ class SQLAdapter {
   }
 
   Future<int> insert(Insert insert) async {
-    String sqlQueryString = SQLAdapter.constructInsertSql(insert);
+    String sqlQueryString = this.constructInsertSql(insert);
 
     var result = await _connection.query(sqlQueryString).toList();
     if (result.length > 0) {
@@ -54,7 +54,7 @@ class SQLAdapter {
   }
 
   Future<int> update(Update update) async {
-    String sqlQueryString = SQLAdapter.constructUpdateSql(update);
+    String sqlQueryString = this.constructUpdateSql(update);
     var affectedRows = await _connection.execute(sqlQueryString);
     return affectedRows;
   }
@@ -72,9 +72,9 @@ class SQLAdapter {
    * Uses _constructOneConditionSQL helper method for creating simple
    * conditions and appends all of them to a string by their condition.logic.
    */
-  static String constructConditionSql(Condition condition,
-                                      [Table table = null]) {
-    String sql = SQLAdapter._constructOneConditionSQL(condition, table);
+  String constructConditionSql(Condition condition,
+                               [Table table = null]) {
+    String sql = this._constructOneConditionSQL(condition, table);
 
     for (Condition cond in condition.conditionQueue) {
       if (cond.logic != null) {
@@ -85,7 +85,7 @@ class SQLAdapter {
         sql += '(';
       }
 
-      sql += SQLAdapter.constructConditionSql(cond, table);
+      sql += this.constructConditionSql(cond, table);
 
       if (cond.logic != null && cond.conditionQueue.length > 0) {
         sql += ')';
@@ -102,24 +102,24 @@ class SQLAdapter {
    * Works by concantenating
    * condition.firstVar + condition.condition + condition.secondVar.
    */
-  static String _constructOneConditionSQL(Condition condition,
+  String _constructOneConditionSQL(Condition condition,
                                           [Table table = null]) {
     if (!(condition.firstVar is TypedSQL)) {
       if (table != null) {
-        condition.firstVar = SQLAdapter.getTypedSqlFromValue(
+        condition.firstVar = this.getTypedSqlFromValue(
             condition.firstVar, table);
       } else {
-        condition.firstVar = SQLAdapter.getTypedSqlFromValue(
+        condition.firstVar = this.getTypedSqlFromValue(
             condition.firstVar);
       }
 
     }
     if (!(condition.secondVar is TypedSQL)) {
       if (table != null) {
-        condition.secondVar = SQLAdapter.getTypedSqlFromValue(
+        condition.secondVar = this.getTypedSqlFromValue(
             condition.secondVar, table);
       } else {
-        condition.secondVar = SQLAdapter.getTypedSqlFromValue(
+        condition.secondVar = this.getTypedSqlFromValue(
             condition.secondVar);
       }
     }
@@ -142,7 +142,7 @@ class SQLAdapter {
    *  LIMIT {{selectSql.limit}}
    *  OFFSET {{selectSql.offset}}'
    */
-  static String constructSelectSql(Select select) {
+  String constructSelectSql(Select select) {
     String sql = 'SELECT ';
     sql += select.columnsToSelect.join(', \n       ');
     sql += ' \nFROM ' + select.table.tableName;
@@ -154,12 +154,12 @@ class SQLAdapter {
 
     if (select.joins.length > 0) {
       for (Join j in select.joins) {
-        sql += SQLAdapter.constructJoinSql(j);
+        sql += this.constructJoinSql(j);
       }
     }
 
     if (select.condition != null) {
-      sql += '\nWHERE ' + SQLAdapter.constructConditionSql(
+      sql += '\nWHERE ' + this.constructConditionSql(
           select.condition,
           select.table
       );
@@ -169,7 +169,7 @@ class SQLAdapter {
       sql += '\nORDER BY ';
       List<String> sorts = new List<String>();
       for (String sortFieldName in select.sorts.keys) {
-        TypedSQL sortFieldSql = SQLAdapter.getTypedSqlFromValue(
+        TypedSQL sortFieldSql = this.getTypedSqlFromValue(
             sortFieldName, select.table);
         sorts.add(sortFieldSql.toSql() + ' ' + select.sorts[sortFieldName]);
       }
@@ -190,23 +190,23 @@ class SQLAdapter {
   /**
    * JOIN sql statement constructor.
    */
-  static String constructJoinSql(Join join) {
+  String constructJoinSql(Join join) {
     String sql = '';
     sql += '\n' + join.joinType.toUpperCase() + ' JOIN ';
     sql += join.tableName;
     sql += ' AS ' + join.tableAlias;
-    sql += '\n ON ' + SQLAdapter.constructConditionSql(join.joinCondition);
+    sql += '\n ON ' + this.constructConditionSql(join.joinCondition);
     return sql;
   }
 
   /**
    * INSERT sql statement constructor.
    */
-  static String constructInsertSql(Insert insert) {
+  String constructInsertSql(Insert insert) {
     List<String> values = new List<String>();
 
     for (var v in insert.fieldsToInsert.values) {
-      values.add(SQLAdapter.getTypedSqlFromValue(v).toSql());
+      values.add(this.getTypedSqlFromValue(v).toSql());
     }
 
     String sql = 'INSERT INTO ${insert.table.tableName} (\n    ';
@@ -224,14 +224,14 @@ class SQLAdapter {
   /**
    * UPDATE sql statement constructor.
    */
-  static String constructUpdateSql(Update update) {
+  String constructUpdateSql(Update update) {
     String sql = 'UPDATE ${update.table.tableName} ';
     sql += '\nSET ';
 
     List<String> fields = new List<String>();
 
     for (String fieldName in update.fieldsToUpdate.keys) {
-      TypedSQL fieldValue = SQLAdapter.getTypedSqlFromValue(
+      TypedSQL fieldValue = this.getTypedSqlFromValue(
           update.fieldsToUpdate[fieldName]);
       fieldName = SQL.camelCaseToUnderscore(fieldName);
       fields.add(fieldName + ' = ' + fieldValue.toSql());
@@ -239,7 +239,7 @@ class SQLAdapter {
 
     sql += fields.join(',\n    ');
 
-    sql += '\nWHERE ' + SQLAdapter.constructConditionSql(
+    sql += '\nWHERE ' + this.constructConditionSql(
         update.condition, update.table);
 
     return sql;
@@ -261,7 +261,6 @@ class SQLAdapter {
     sql += fieldDefinitions.join(',');
 
     sql += '\n' + this.getConstraintsSql(table);
-
     sql += '\n);';
 
     return sql;
@@ -304,14 +303,14 @@ class SQLAdapter {
       // seems that we have foreign key here
       // so we need to set type based on the type
       // of the related table's primary key
-      fieldType = this.convertDartType(relatedField);
+      fieldType = this.getSqlType(relatedField);
     }
     else {
       if (field.isPrimaryKey) {
         fieldType = 'SERIAL';
       }
       else {
-        fieldType = this.convertDartType(field);
+        fieldType = this.getSqlType(field);
       }
     }
 
@@ -333,7 +332,11 @@ class SQLAdapter {
     return fieldDefinition;
   }
 
-  String convertDartType(Field field) {
+  /**
+   * This method is invoked when db table(column) is created to determine
+   * what sql type to use.
+   */
+  String getSqlType(Field field) {
     String dbTypeName = '';
     switch (field.propertyTypeName) {
       case 'int':
@@ -364,7 +367,7 @@ class SQLAdapter {
    * If it is provided and if instanceFieldValue is [String] it will be compared
    * with all of the table field names.
    */
-  static TypedSQL getTypedSqlFromValue(var instanceFieldValue,
+  TypedSQL getTypedSqlFromValue(var instanceFieldValue,
                                        [Table table=null]) {
     if (instanceFieldValue is String && table != null) {
       for (Field f in table.fields) {
