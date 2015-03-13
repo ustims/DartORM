@@ -142,11 +142,10 @@ class Model {
 
     Delete delete = new Delete(_tableDefinition);
 
-    for (Field field in _tableDefinition.fields) {
+    Field field = getPrimaryKeyField();
+    if (field != null) {
       var value = AnnotationsParser.getPropertyValueForField(field, this);
-      if (field.isPrimaryKey) {
-        delete.where(new Equals(field.fieldName, value));
-      }
+      delete.where(new Equals(field.fieldName, value));
     }
 
     var deleteResult = await ormAdapter.delete(delete);
