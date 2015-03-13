@@ -59,6 +59,12 @@ class SQLAdapter {
     return affectedRows;
   }
 
+  Future<int> delete(Delete delete) async {
+    String sqlQueryString = this.constructDeleteSql(delete);
+    var affectedRows = await _connection.execute(sqlQueryString);
+    return affectedRows;
+  }
+
   Future createTable(Table table) async {
     String sqlQueryString = this.constructTableSql(table);
     var result = await _connection.execute(sqlQueryString);
@@ -241,6 +247,18 @@ class SQLAdapter {
 
     sql += '\nWHERE ' + this.constructConditionSql(
         update.condition, update.table);
+
+    return sql;
+  }
+
+  /**
+   * DELETE sql statement constructor.
+   */
+  String constructDeleteSql(Delete delete) {
+    String sql = 'DELETE FROM ${delete.table.tableName} ';
+
+    sql += '\nWHERE ' + this.constructConditionSql(
+        delete.condition, delete.table);
 
     return sql;
   }

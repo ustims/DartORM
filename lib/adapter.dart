@@ -27,6 +27,11 @@ abstract class DBAdapter {
   Future<int> update(Update update);
 
   /**
+   * Must delete a row.
+   */
+  Future<int> delete(Delete delete);
+
+  /**
    * Must create a table/collection.
    */
   Future createTable(Table table);

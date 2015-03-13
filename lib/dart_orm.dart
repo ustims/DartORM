@@ -127,6 +127,32 @@ class Model {
     return updateResult;
   }
 
+  /**
+   * Deletes this model instance data on database.
+   * This model instance primary key should have a not null value.
+   *
+   * Throws [Exception] if this model instance is null.
+   */
+  Future delete() async {
+    var primaryKeyValue = getPrimaryKeyValue();
+    if (primaryKeyValue == null) {
+      throw new Exception('delete() should not be called' +
+      'on instances with null primary key value.');
+    }
+
+    Delete delete = new Delete(_tableDefinition);
+
+    for (Field field in _tableDefinition.fields) {
+      var value = AnnotationsParser.getPropertyValueForField(field, this);
+      if (field.isPrimaryKey) {
+        delete.where(new Equals(field.fieldName, value));
+      }
+    }
+
+    var deleteResult = await ormAdapter.delete(delete);
+    return deleteResult;
+  }
+
   Future<bool> save() async {
     Completer completer = new Completer();
 
