@@ -221,6 +221,20 @@ class Update {
   }
 }
 
+class Delete {
+  Table table;
+
+  Condition _condition;
+
+  Delete(Table this.table);
+
+  Condition get condition => _condition;
+
+  where(Condition cond) {
+    _condition = cond;
+  }
+}
+
 class Insert {
   Table table;
   LinkedHashMap<String, dynamic> _fieldsToInsert =

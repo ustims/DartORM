@@ -48,6 +48,9 @@ class MemoryAdapter extends DBAdapter {
     if (operation is Update) {
       throw new Exception('Not implemented yet');
       return this.update(operation);
+    } else if (operation is Delete) {
+      throw new Exception('Not implemented yet');
+      return this.delete(operation);
     } else if (operation is Insert) {
       return this.insert(operation);
     } else if (operation is Table) {
