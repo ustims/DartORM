@@ -360,6 +360,9 @@ class SQLAdapter {
       case 'int':
         dbTypeName = 'int';
         break;
+      case 'double':
+        dbTypeName = 'double precision';
+        break;
       case 'String':
         dbTypeName = 'text';
         break;
