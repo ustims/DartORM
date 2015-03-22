@@ -24,11 +24,14 @@ class User extends ORM.Model {
   String familyName;
 
   @ORM.DBField()
+  double weight;
+
+  @ORM.DBField()
   DateTime created;
 
   String toString() {
     return 'User { id: $id, ' +
-    'givenName: \'$givenName\', familyName: \'$familyName\' }';
+    'givenName: \'$givenName\', familyName: \'$familyName\', weight: \'$weight\' }';
   }
 }
 
@@ -63,6 +66,7 @@ Future saveTestCase() async {
   User u = new User();
   u.givenName = 'Sergey';
   u.familyName = 'Ustimenko';
+  u.weight = 123.456;
   await u.save();
 
   // that should give him an 'id', so lets use that id to find him
@@ -73,10 +77,12 @@ Future saveTestCase() async {
   expect(u.id, savedFound.id);
   expect(u.givenName, savedFound.givenName);
   expect(u.familyName, savedFound.familyName);
+  expect(u.weight, savedFound.weight);
 
   // now lets change some properties for both instances
   savedFound.givenName = 'yegreS';
   savedFound.familyName = 'oknemitsU';
+  savedFound.weight = 234.567;
 
   await savedFound.save();
 
@@ -88,6 +94,7 @@ Future saveTestCase() async {
   expect(foundModified.id, u.id);
   expect(foundModified.givenName, 'yegreS');
   expect(foundModified.familyName, 'oknemitsU');
+  expect(foundModified.weight, 234.567);
 }
 
 Future findOneTestCase() async {
