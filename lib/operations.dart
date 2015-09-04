@@ -171,7 +171,7 @@ class Select extends SQL {
   }
 
   void setOffset(int offset) {
-    offset = offset;
+    this.offset = offset;
   }
 
   join(String joinType, String tableName, String tableAlias,
