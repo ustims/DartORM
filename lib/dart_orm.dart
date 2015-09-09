@@ -4,6 +4,7 @@ library dart_orm;
 import 'dart:mirrors';
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:logging/logging.dart';
 
