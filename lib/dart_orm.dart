@@ -222,6 +222,9 @@ class FindBase extends Select {
 
         for (Field field in modelTable.fields) {
           var fieldValue = row[field.fieldName];
+          if (field.converter != null) {
+            fieldValue = field.converter(fieldValue);
+          }
           newInstance.setField(field.constructedFromPropertyName, fieldValue);
         }
 
