@@ -372,6 +372,9 @@ class SQLAdapter {
       case 'LinkedHashMap':
         dbTypeName = 'json';
         break;
+      case 'dynamic':
+        dbTypeName = 'json';
+        break;
     }
     return dbTypeName;
   }
