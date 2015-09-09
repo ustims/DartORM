@@ -33,7 +33,6 @@ typedef dynamic FieldConverter(var value);
  */
 class DBField {
   final String _dbFieldName;
-  
   const DBField([String this._dbFieldName]);
 
   String get name => _dbFieldName;
