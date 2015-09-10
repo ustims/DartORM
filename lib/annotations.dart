@@ -1,6 +1,5 @@
 part of dart_orm;
 
-
 /**
  * Database table annotation. If some class wants to be orm-enabled,
  * it needs to be annotated with DBTable().
@@ -68,8 +67,8 @@ class AnnotationsParser {
     for (ClassMirror classMirror in classMirrorsWithMetadata) {
       for (InstanceMirror metaInstanceMirror in classMirror.metadata) {
         String modelClassName = MirrorSystem.getName(classMirror.simpleName);
-        String metaClassName = MirrorSystem.getName(
-            metaInstanceMirror.type.simpleName);
+        String metaClassName =
+            MirrorSystem.getName(metaInstanceMirror.type.simpleName);
 
         if (metaClassName == 'DBTable') {
           Table table = AnnotationsParser.constructTable(classMirror);
@@ -132,15 +131,14 @@ class AnnotationsParser {
     return mirror.getField(field.constructedFromPropertyName).reflectee;
   }
 
-  static dynamic setPropertyValueForField(Field field,
-                                          dynamic value,
-                                          Model instance) {
+  static dynamic setPropertyValueForField(
+      Field field, dynamic value, Model instance) {
     InstanceMirror mirror = reflect(instance);
     return mirror.setField(field.constructedFromPropertyName, value);
   }
 
-  static Field constructField(InstanceMirror annotation,
-                              VariableMirror fieldMirror) {
+  static Field constructField(
+      InstanceMirror annotation, VariableMirror fieldMirror) {
     Field field = new Field();
 
     var propertyMeta = fieldMirror.metadata;

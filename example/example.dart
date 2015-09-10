@@ -19,7 +19,7 @@ class User extends ORM.Model {
   @ORM.DBField()
   String familyName;
 
-  String toString(){
+  String toString() {
     return 'User { id: $id, givenName: \'$givenName\', familyName: \'$familyName\' }';
   }
 }
@@ -35,7 +35,7 @@ dynamic testUser() async {
 
   // lets try simple one-row select by id
   ORM.FindOne findOne = new ORM.FindOne(User)
-  // whereEquals is just a shortcut for .where(new ORM.Equals('id', 1))
+    // whereEquals is just a shortcut for .where(new ORM.Equals('id', 1))
     ..whereEquals('id', 1);
 
   User foundUser = await findOne.execute();
@@ -47,8 +47,7 @@ dynamic testUser() async {
   foundUser.givenName = 'yegreS';
   await foundUser.save();
 
-  ORM.FindOne findOneModified = new ORM.FindOne(User)
-    ..whereEquals('id', 1);
+  ORM.FindOne findOneModified = new ORM.FindOne(User)..whereEquals('id', 1);
 
   User foundModifiedUser = await findOneModified.execute();
   assert(foundModifiedUser.id == 1);
@@ -61,11 +60,8 @@ dynamic testUser() async {
   await foundUser.save();
 
   ORM.Find findMultiple = new ORM.Find(User)
-    ..where(new ORM.LowerThan('id', 3)
-      .and(new ORM.Equals('givenName', 'Sergey')
-        .or(new ORM.Equals('familyName', 'Ustimenko'))
-      )
-  )
+    ..where(new ORM.LowerThan('id', 3).and(new ORM.Equals('givenName', 'Sergey')
+        .or(new ORM.Equals('familyName', 'Ustimenko'))))
     ..orderBy('id', 'DESC')
     ..setLimit(10);
 
@@ -86,7 +82,7 @@ dynamic example() async {
   ORM.AnnotationsParser.initialize();
 
   PostgresqlDBAdapter postgresqlAdapter = new PostgresqlDBAdapter(
-    'postgres://dart_orm_test:dart_orm_test@localhost:5432/dart_orm_test');
+      'postgres://dart_orm_test:dart_orm_test@localhost:5432/dart_orm_test');
   await postgresqlAdapter.connect();
 
   ORM.Model.ormAdapter = postgresqlAdapter;
@@ -110,8 +106,7 @@ dynamic example() async {
   await testUser();
 
   MySQLDBAdapter mysqlAdapter = new MySQLDBAdapter(
-    'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test'
-  );
+      'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test');
   await mysqlAdapter.connect();
   ORM.Model.ormAdapter = mysqlAdapter;
   migrationResult = await ORM.Migrator.migrate();

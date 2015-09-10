@@ -2,7 +2,6 @@ part of dart_orm;
 
 final Logger log = new Logger('Migrator');
 
-
 @DBTable()
 class OrmInfoTable extends Model {
   @DBField()
@@ -11,7 +10,6 @@ class OrmInfoTable extends Model {
   @DBField()
   String tableDefinitions;
 }
-
 
 class Migrator {
   static Future migrate() async {
@@ -49,8 +47,8 @@ class Migrator {
     return false;
   }
 
-  static Future createSchemasFromScratch(DBAdapter adapter,
-                                         Map<String, Table> ormClasses) {
+  static Future createSchemasFromScratch(
+      DBAdapter adapter, Map<String, Table> ormClasses) {
     Completer completer = new Completer();
 
     // here will be all futures for creating all the tables.
@@ -66,18 +64,15 @@ class Migrator {
       //tableDefinitions.add(adapter.constructTableSql(t));
     }
 
-    Future.wait(futures)
-    .then((allTables) {
+    Future.wait(futures).then((allTables) {
       // all tables created, lets insert version info
       OrmInfoTable ormInfo = new OrmInfoTable();
       ormInfo.currentVersion = 0;
       ormInfo.tableDefinitions = tableDefinitions.join('\n');
       return ormInfo.save();
-    })
-    .then((ormInfoSaveResult) {
+    }).then((ormInfoSaveResult) {
       completer.complete(true);
-    })
-    .catchError((err) {
+    }).catchError((err) {
       log.severe('Failed to create tables.');
       log.severe(err);
       completer.completeError(err);
