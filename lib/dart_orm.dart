@@ -77,7 +77,6 @@ class Model {
 
     Insert insert = new Insert(_tableDefinition);
 
-    Symbol primaryKeyProperty = null;
     for (Field field in _tableDefinition.fields) {
       if (!field.isPrimaryKey) {
         insert.value(field.fieldName,
@@ -147,11 +146,8 @@ class Model {
   }
 
   Future<bool> save() async {
-    Completer completer = new Completer();
-
     var primaryKeyValue = getPrimaryKeyValue();
 
-    var operation = null;
     if (primaryKeyValue != null) {
       var updateResult = this.update();
       return updateResult;

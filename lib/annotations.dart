@@ -86,7 +86,6 @@ class AnnotationsParser {
     List<ClassMirror> classMirrors = new List<ClassMirror>();
 
     MirrorSystem m = currentMirrorSystem();
-    IsolateMirror i = m.isolate;
 
     for (LibraryMirror mm in m.libraries.values) {
       for (var declaration in mm.declarations.values) {

@@ -23,7 +23,7 @@ class Migrator {
       ..setLimit(1);
 
     try {
-      OrmInfoTable ormInfoTable = await f.execute();
+      await f.execute();
       // TODO: check if existing schema in
       // tableDefinitions string is actual and run migrations
       // in dev mode or print diff in production mode
