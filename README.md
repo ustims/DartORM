@@ -1,4 +1,4 @@
-[![Build Status](https://drone.io/github.com/ustims/DartORM/status.png?random=2)](https://drone.io/github.com/ustims/DartORM/latest)
+[![Build Status](https://travis-ci.org/ustims/DartORM.svg?branch=master)](https://travis-ci.org/ustims/DartORM)
 
 Dart ORM
 ========
