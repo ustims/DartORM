@@ -4,4 +4,4 @@ dart:
   - dev
 script: dart test/test.dart
 before_script:
-  - psql -c 'create database postgres;' -U postgres
+  - psql -c 'create database dart_orm;' -U postgres
