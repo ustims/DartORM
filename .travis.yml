@@ -2,3 +2,4 @@ language: dart
 dart:
   - stable
   - dev
+script: dart test/test.dart
