@@ -7,3 +7,8 @@ before_script:
   - psql -c 'create database dart_orm;' -U postgres
 services:
   - mongodb
+env:
+  global:
+    - MYSQL_USER=root
+    - PSQL_USER=postgres
+    - PSQL_DB=dart_orm
