@@ -28,23 +28,16 @@ class Migrator {
       // tableDefinitions string is actual and run migrations
       // in dev mode or print diff in production mode
       log.info("Tables exists. Later here will be check for defference.");
-      return true;
-    } catch (e) {
-      if (e is TableNotExistException) {
-        // relation does not exists
-        // create db
-        bool migrationResult = await Migrator.createSchemasFromScratch(
-            adapter, AnnotationsParser.ormClasses);
-        log.info('All orm tables were created from scratch.');
-        return migrationResult;
-      } else {
-        // its bad if we don't know what happened
-        // because we miss all the ifs above, but lets notice about it.
-        throw e;
-      }
+    } on TableNotExistException {
+      // relation does not exists
+      // create db
+      bool migrationResult = await Migrator.createSchemasFromScratch(
+          adapter, AnnotationsParser.ormClasses);
+      log.info('All orm tables were created from scratch.');
+      return migrationResult;
     }
 
-    return false;
+    return true;
   }
 
   static Future createSchemasFromScratch(
