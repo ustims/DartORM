@@ -440,6 +440,9 @@ class SQLAdapter {
       case 'json':
         ret = new JSONSQL(fieldValue);
       break;
+      case 'jsonb':
+        ret = new JSONSQL(fieldValue);
+      break;
     }
     
     return ret;
