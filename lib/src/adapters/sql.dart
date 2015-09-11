@@ -242,8 +242,11 @@ class SQLAdapter {
     List<String> fields = new List<String>();
 
     for (String fieldName in update.fieldsToUpdate.keys) {
+      String intType = getSqlType(update.table.fields.
+          firstWhere((Field f) => f.fieldName == fieldName));
+      
       TypedSQL fieldValue = this.getTypedSqlFromValue(
-          update.fieldsToUpdate[fieldName]);
+          update.fieldsToUpdate[fieldName], sqlType: intType);
       fieldName = SQL.camelCaseToUnderscore(fieldName);
       fields.add(fieldName + ' = ' + fieldValue.toSql());
     }
