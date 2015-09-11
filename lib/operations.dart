@@ -1,6 +1,5 @@
 part of dart_orm;
 
-
 class ConditionLogic {
   static String AND = 'AND';
   static String OR = 'OR';
@@ -19,16 +18,13 @@ class SQL {
       if (isUpper && charNumber > 0 && !prevCharWasUpper) {
         result += '_' + c.toLowerCase();
         prevCharWasUpper = true;
-      }
-      else {
+      } else {
         result += c.toLowerCase();
         if (charNumber > 0 && !isUpper) {
           prevCharWasUpper = false;
-        }
-        else {
+        } else {
           prevCharWasUpper = true;
         }
-
       }
       charNumber++;
     }
@@ -62,10 +58,9 @@ class Condition {
 
   List<Condition> conditionQueue;
 
-  Condition(dynamic this._firstVar,
-            String this._condition,
-            dynamic this._secondVar,
-            [this._logic = null]) {
+  Condition(
+      dynamic this._firstVar, String this._condition, dynamic this._secondVar,
+      [this._logic = null]) {
     conditionQueue = new List<Condition>();
   }
 
@@ -107,33 +102,33 @@ class Condition {
 }
 
 class Equals extends Condition {
-  Equals(var firstVar, var secondVar, [String logic]):
-  super(firstVar, '=', secondVar, logic);
+  Equals(var firstVar, var secondVar, [String logic])
+      : super(firstVar, '=', secondVar, logic);
 }
 
 class In extends Condition {
-  In(var firstVar, var secondVar, [String logic]):
-  super(firstVar, 'IN', secondVar, logic);
+  In(var firstVar, var secondVar, [String logic])
+      : super(firstVar, 'IN', secondVar, logic);
 }
 
 class NotIn extends Condition {
-  NotIn(var firstVar, var secondVar, [String logic]):
-  super(firstVar, 'NOT IN', secondVar, logic);
+  NotIn(var firstVar, var secondVar, [String logic])
+      : super(firstVar, 'NOT IN', secondVar, logic);
 }
 
 class NotEquals extends Condition {
-  NotEquals(var firstVar, var secondVar, [String logic]):
-  super(firstVar, '<>', secondVar, logic);
+  NotEquals(var firstVar, var secondVar, [String logic])
+      : super(firstVar, '<>', secondVar, logic);
 }
 
 class LowerThan extends Condition {
-  LowerThan(var firstVar, var secondVar, [String logic]):
-  super(firstVar, '<', secondVar, logic);
+  LowerThan(var firstVar, var secondVar, [String logic])
+      : super(firstVar, '<', secondVar, logic);
 }
 
 class BiggerThan extends Condition {
-  BiggerThan(var firstVar, var secondVar, [String logic]):
-  super(firstVar, '>', secondVar, logic);
+  BiggerThan(var firstVar, var secondVar, [String logic])
+      : super(firstVar, '>', secondVar, logic);
 }
 
 class Join {
@@ -175,7 +170,7 @@ class Select extends SQL {
   }
 
   join(String joinType, String tableName, String tableAlias,
-       Condition joinCondition) {
+      Condition joinCondition) {
     this._joins.add(new Join(joinType, tableName, tableAlias, joinCondition));
   }
 
@@ -195,7 +190,7 @@ class Select extends SQL {
     _sorts[fieldName] = order;
   }
 
-  String toString(){
+  String toString() {
     return 'SELECT ' + columnsToSelect.join(',') + ' FROM ' + table.tableName;
   }
 }
@@ -204,7 +199,7 @@ class Update {
   Table table;
 
   LinkedHashMap<String, dynamic> fieldsToUpdate =
-  new LinkedHashMap<String, dynamic>();
+      new LinkedHashMap<String, dynamic>();
 
   Condition _condition;
 
@@ -238,7 +233,7 @@ class Delete {
 class Insert {
   Table table;
   LinkedHashMap<String, dynamic> _fieldsToInsert =
-  new LinkedHashMap<String, dynamic>();
+      new LinkedHashMap<String, dynamic>();
 
   Insert(Table this.table);
 
