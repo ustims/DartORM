@@ -27,7 +27,7 @@ class Migrator {
       // TODO: check if existing schema in
       // tableDefinitions string is actual and run migrations
       // in dev mode or print diff in production mode
-      log.info("Tables exists. Later here will be check for defference.");
+      log.info("Tables exists. Later here will be check for difference.");
     } on TableNotExistException {
       // relation does not exists
       // create db
