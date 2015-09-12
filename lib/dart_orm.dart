@@ -1,6 +1,5 @@
 library dart_orm;
 
-
 import 'dart:mirrors';
 import 'dart:async';
 import 'dart:collection';
@@ -16,7 +15,6 @@ part 'src/adapters/sql.dart';
 part 'src/adapters/memory.dart';
 part 'migrator.dart';
 
-
 class Model {
   Table _tableDefinition = null;
   static DBAdapter _sAdapter = null;
@@ -24,7 +22,6 @@ class Model {
   Model() {
     _tableDefinition = AnnotationsParser.getTableForInstance(this);
   }
-
 
   static set ormAdapter(DBAdapter adapter) {
     _sAdapter = adapter;
@@ -51,8 +48,8 @@ class Model {
   dynamic getPrimaryKeyValue() {
     Field field = getPrimaryKeyField();
     if (field != null) {
-      var instanceFieldValue = AnnotationsParser.getPropertyValueForField(
-          field, this);
+      var instanceFieldValue =
+          AnnotationsParser.getPropertyValueForField(field, this);
       return instanceFieldValue;
     }
 
@@ -76,23 +73,20 @@ class Model {
     var primaryKeyValue = getPrimaryKeyValue();
     if (primaryKeyValue != null) {
       throw new Exception('insert() should not be called' +
-      'on instances with not-null primary key value, use update() instead.');
+          'on instances with not-null primary key value, use update() instead.');
     }
 
     Insert insert = new Insert(_tableDefinition);
 
-    Symbol primaryKeyProperty = null;
     for (Field field in _tableDefinition.fields) {
       if (!field.isPrimaryKey) {
-        insert.value(
-            field.fieldName,
-            AnnotationsParser.getPropertyValueForField(field, this)
-        );
+        insert.value(field.fieldName,
+            AnnotationsParser.getPropertyValueForField(field, this));
       }
     }
 
     var newRecordId = await ormAdapter.insert(insert);
-    if(this.getPrimaryKeyField() != null){
+    if (this.getPrimaryKeyField() != null) {
       this.setPrimaryKeyValue(newRecordId);
     }
 
@@ -109,7 +103,7 @@ class Model {
     var primaryKeyValue = getPrimaryKeyValue();
     if (primaryKeyValue == null) {
       throw new Exception('update() should not be called' +
-      'on instances with null primary key value, use insert() instead.');
+          'on instances with null primary key value, use insert() instead.');
     }
 
     Update update = new Update(_tableDefinition);
@@ -118,8 +112,7 @@ class Model {
       var value = AnnotationsParser.getPropertyValueForField(field, this);
       if (field.isPrimaryKey) {
         update.where(new Equals(field.fieldName, value));
-      }
-      else {
+      } else {
         update.set(field.fieldName, value);
       }
     }
@@ -138,7 +131,7 @@ class Model {
     var primaryKeyValue = getPrimaryKeyValue();
     if (primaryKeyValue == null) {
       throw new Exception('delete() should not be called' +
-      'on instances with null primary key value.');
+          'on instances with null primary key value.');
     }
 
     Delete delete = new Delete(_tableDefinition);
@@ -154,19 +147,15 @@ class Model {
   }
 
   Future<bool> save() async {
-    Completer completer = new Completer();
-
     var primaryKeyValue = getPrimaryKeyValue();
 
-    var operation = null;
     if (primaryKeyValue != null) {
       var updateResult = this.update();
       return updateResult;
-    }
-    else {
+    } else {
       var newRecordId = await this.insert();
       if (this.getPrimaryKeyField() != null &&
-      newRecordId == this.getPrimaryKeyValue()) {
+          newRecordId == this.getPrimaryKeyValue()) {
         return true;
       } else if (newRecordId == 0) {
         // newRecordId will be 0 for models without primary key
@@ -182,7 +171,7 @@ class FindBase extends Select {
   Type _modelType;
   Table table;
 
-  FindBase(Type this._modelType): super(['*']) {
+  FindBase(Type this._modelType) : super(['*']) {
     table = AnnotationsParser.getTableForType(_modelType);
   }
 
@@ -215,11 +204,10 @@ class FindBase extends Select {
 
     List<Model> foundInstances = new List<Model>();
 
-    Model.ormAdapter.select(selectSql)
-    .then((List rows){
+    Model.ormAdapter.select(selectSql).then((List rows) {
       for (Map<String, dynamic> row in rows) {
-        InstanceMirror newInstance = modelMirror.newInstance(
-            new Symbol(''), [], new Map());
+        InstanceMirror newInstance =
+            modelMirror.newInstance(new Symbol(''), [], new Map());
 
         for (Field field in modelTable.fields) {
           var fieldValue = row[field.fieldName];
@@ -233,8 +221,7 @@ class FindBase extends Select {
       }
 
       completer.complete(foundInstances);
-    })
-    .catchError((e){
+    }).catchError((e) {
       completer.completeError(e);
     });
 
@@ -243,7 +230,7 @@ class FindBase extends Select {
 }
 
 class Find extends FindBase {
-  Find(Type modelType): super(modelType);
+  Find(Type modelType) : super(modelType);
 
   Future<List<Model>> execute() {
     return FindBase._executeFind(_modelType, this);
@@ -251,7 +238,7 @@ class Find extends FindBase {
 }
 
 class FindOne extends FindBase {
-  FindOne(Type modelType): super(modelType);
+  FindOne(Type modelType) : super(modelType);
 
   Future<Model> execute() {
     return FindBase._executeFindOne(_modelType, this);

@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'package:unittest/unittest.dart';
 
-
 import 'package:dart_orm/dart_orm.dart' as ORM;
 
 import 'package:dart_orm_adapter_postgresql/dart_orm_adapter_postgresql.dart';
 import 'package:dart_orm_adapter_mongodb/dart_orm_adapter_mongodb.dart';
 import 'package:dart_orm_adapter_mysql/dart_orm_adapter_mysql.dart';
-
 
 @ORM.DBTable('users')
 class User extends ORM.Model {
@@ -30,7 +28,7 @@ class User extends ORM.Model {
 
   String toString() {
     return 'User { id: $id, ' +
-    'givenName: \'$givenName\', familyName: \'$familyName\', weight: \'$weight\' }';
+        'givenName: \'$givenName\', familyName: \'$familyName\', weight: \'$weight\' }';
   }
 }
 
@@ -69,8 +67,7 @@ Future saveTestCase() async {
   await u.save();
 
   // that should give him an 'id', so lets use that id to find him
-  ORM.FindOne f = new ORM.FindOne(User)
-    ..whereEquals('id', u.id);
+  ORM.FindOne f = new ORM.FindOne(User)..whereEquals('id', u.id);
   User savedFound = await f.execute();
 
   expect(u.id, savedFound.id);
@@ -87,8 +84,7 @@ Future saveTestCase() async {
 
   // now lets find him again to ensure that all information
   // was stored to the database
-  ORM.FindOne findModified = new ORM.FindOne(User)
-    ..whereEquals('id', u.id);
+  ORM.FindOne findModified = new ORM.FindOne(User)..whereEquals('id', u.id);
   User foundModified = await findModified.execute();
   expect(foundModified.id, u.id);
   expect(foundModified.givenName, 'yegreS');
@@ -97,8 +93,7 @@ Future saveTestCase() async {
 }
 
 Future findOneTestCase() async {
-  ORM.FindOne f = new ORM.FindOne(User)
-    ..whereEquals('givenName', 'Sergey');
+  ORM.FindOne f = new ORM.FindOne(User)..whereEquals('givenName', 'Sergey');
 
   User found = await f.execute();
   expect(found.givenName, 'Sergey');
@@ -125,8 +120,7 @@ Future dateTimeTestCase() async {
 
   await u.save();
 
-  ORM.FindOne f = new ORM.FindOne(User)
-    ..whereEquals('id', u.id);
+  ORM.FindOne f = new ORM.FindOne(User)..whereEquals('id', u.id);
   User saved = await f.execute();
 
   int difference = saved.created.difference(now).inMilliseconds;
@@ -142,14 +136,14 @@ Future dateTimeTestCase() async {
 
   ORM.Find findLowerThan = new ORM.Find(User)
     ..where(new ORM.LowerThan('created',
-      new DateTime(now.year, now.month, now.day, now.hour, now.minute + 5)));
+        new DateTime(now.year, now.month, now.day, now.hour, now.minute + 5)));
 
   List foundLowerThan = await findLowerThan.execute();
   expect(foundLowerThan.length, 1);
 
   ORM.Find findBiggerThan = new ORM.Find(User)
     ..where(new ORM.BiggerThan('created',
-      new DateTime(now.year, now.month, now.day, now.hour, now.minute + 5)));
+        new DateTime(now.year, now.month, now.day, now.hour, now.minute + 5)));
 
   List foundBiggerThan = await findBiggerThan.execute();
   expect(foundBiggerThan.length, 1);
@@ -195,8 +189,7 @@ class IntegrationTests {
     assert(migrationResult);
 
     MySQLDBAdapter mysqlAdapter = new MySQLDBAdapter(
-        'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test'
-    );
+        'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test');
     await mysqlAdapter.connect();
     ORM.Model.ormAdapter = mysqlAdapter;
     migrationResult = await ORM.Migrator.migrate();

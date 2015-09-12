@@ -1,6 +1,5 @@
 part of dart_orm;
 
-
 abstract class TypedSQL {
   dynamic _value;
   dynamic get value => _value;
@@ -11,7 +10,7 @@ abstract class TypedSQL {
 }
 
 class RawSQL extends TypedSQL {
-  RawSQL(dynamic value): super(value);
+  RawSQL(dynamic value) : super(value);
 
   String toSql() {
     return _value.toString();
@@ -19,7 +18,7 @@ class RawSQL extends TypedSQL {
 }
 
 class StringSQL extends TypedSQL {
-  StringSQL(String value): super(value);
+  StringSQL(String value) : super(value);
 
   String toSql() {
     return "'$_value'";
@@ -27,7 +26,7 @@ class StringSQL extends TypedSQL {
 }
 
 class NullSQL extends TypedSQL {
-  NullSQL(): super(null);
+  NullSQL() : super(null);
 
   String toSql() {
     return 'NULL';
@@ -35,7 +34,7 @@ class NullSQL extends TypedSQL {
 }
 
 class ListSQL extends TypedSQL {
-  ListSQL(List list): super(list);
+  ListSQL(List list) : super(list);
 
   String toSql() {
     return '(' + _value.join(',') + ')';
@@ -43,7 +42,7 @@ class ListSQL extends TypedSQL {
 }
 
 class DateTimeSQL extends TypedSQL {
-  DateTimeSQL(DateTime datetime): super(datetime);
+  DateTimeSQL(DateTime datetime) : super(datetime);
 
   String toSql() {
     DateTime d = _value;

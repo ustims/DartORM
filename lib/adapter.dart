@@ -56,20 +56,20 @@ class AdapterException implements Exception {
 }
 
 class TableNotExistException extends AdapterException {
-  TableNotExistException(): super(AdapterException.ErrTableNotExist);
+  TableNotExistException() : super(AdapterException.ErrTableNotExist);
 }
 
 class ColumnNotExistException extends AdapterException {
-  ColumnNotExistException(): super(AdapterException.ErrColumnNotExist);
+  ColumnNotExistException() : super(AdapterException.ErrColumnNotExist);
 }
 
 class UnknownAdapterException extends AdapterException {
   dynamic originalException;
 
-  UnknownAdapterException(this.originalException):
-  super(AdapterException.ErrUnknown);
+  UnknownAdapterException(this.originalException)
+      : super(AdapterException.ErrUnknown);
 
-  toString(){
+  toString() {
     return originalException.toString();
   }
 }

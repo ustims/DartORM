@@ -5,9 +5,10 @@ part of dart_orm;
  * This should not be user at all. For some time %)
  */
 class MemoryAdapter extends DBAdapter {
-  MemoryAdapter(): super();
+  MemoryAdapter() : super();
 
-  Map<Table, LinkedHashMap<int, dynamic>> _records = new Map<Table, LinkedHashMap<int, dynamic>>();
+  Map<Table, LinkedHashMap<int, dynamic>> _records =
+      new Map<Table, LinkedHashMap<int, dynamic>>();
 
   String parseError(String errorCode) {
     return DBAdapter.ErrUnknown;
@@ -35,7 +36,8 @@ class MemoryAdapter extends DBAdapter {
       for (Map record in records.values) {
         // TODO: here must(will) be much better condition handling
         if (record.containsKey(selectSql.condition.firstVar.value) &&
-        record[selectSql.condition.firstVar.value] == selectSql.condition.secondVar.value) {
+            record[selectSql.condition.firstVar.value] ==
+                selectSql.condition.secondVar.value) {
           completer.complete([record.values.toList()]);
         }
       }
@@ -88,17 +90,15 @@ class MemoryAdapter extends DBAdapter {
           if (field.isPrimaryKey) {
             if (!insert.fieldsToInsert.containsKey(field.fieldName)) {
               primaryKey = _records[table].keys.length + 1;
-            }
-            else {
+            } else {
               primaryKey = insert.fieldsToInsert[field.fieldName].value;
             }
 
             valuesToInsert[field.fieldName] = primaryKey;
+          } else {
+            valuesToInsert[field.fieldName] =
+                insert.fieldsToInsert[field.fieldName].value;
           }
-          else{
-            valuesToInsert[field.fieldName] = insert.fieldsToInsert[field.fieldName].value;
-          }
-
         }
 
         _records[table][primaryKey] = valuesToInsert;
