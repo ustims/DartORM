@@ -109,7 +109,7 @@ class SQLAdapter {
     if (!(condition.firstVar is TypedSQL)) {
       if (table != null) {
         condition.firstVar =
-            this.getTypedSqlFromValue(condition.firstVar, table);
+            this.getTypedSqlFromValue(condition.firstVar, table: table);
       } else {
         condition.firstVar = this.getTypedSqlFromValue(condition.firstVar);
       }
@@ -117,7 +117,7 @@ class SQLAdapter {
     if (!(condition.secondVar is TypedSQL)) {
       if (table != null) {
         condition.secondVar =
-            this.getTypedSqlFromValue(condition.secondVar, table);
+            this.getTypedSqlFromValue(condition.secondVar, table: table);
       } else {
         condition.secondVar = this.getTypedSqlFromValue(condition.secondVar);
       }
@@ -169,7 +169,7 @@ class SQLAdapter {
       List<String> sorts = new List<String>();
       for (String sortFieldName in select.sorts.keys) {
         TypedSQL sortFieldSql =
-            this.getTypedSqlFromValue(sortFieldName, select.table);
+            this.getTypedSqlFromValue(sortFieldName, table: select.table);
         sorts.add(sortFieldSql.toSql() + ' ' + select.sorts[sortFieldName]);
       }
       sql += sorts.join(', ');
