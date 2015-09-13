@@ -48,7 +48,11 @@ class Migrator {
 
     try {
       for (Table t in ormClasses.values) {
-        await adapter.createTable(t);
+        try {
+          await adapter.createTable(t);
+        } catch(error, stack) {
+          log.severe('Failed to create tables.', error, stack);
+        }
         // TODO: adapter should provide a way to get hash or info about current
         // schema so we can diff them
         //tableDefinitions.add(adapter.constructTableSql(t));
@@ -61,7 +65,6 @@ class Migrator {
       return await ormInfo.save();
     } catch (err, stack) {
       log.severe('Failed to create tables.', err, stack);
-      rethrow;
     }
   }
 }
