@@ -109,7 +109,7 @@ class SQLAdapter {
     if (!(condition.firstVar is TypedSQL)) {
       if (table != null) {
         condition.firstVar =
-            this.getTypedSqlFromValue(condition.firstVar, table);
+            this.getTypedSqlFromValue(condition.firstVar, table: table);
       } else {
         condition.firstVar = this.getTypedSqlFromValue(condition.firstVar);
       }
@@ -117,7 +117,7 @@ class SQLAdapter {
     if (!(condition.secondVar is TypedSQL)) {
       if (table != null) {
         condition.secondVar =
-            this.getTypedSqlFromValue(condition.secondVar, table);
+            this.getTypedSqlFromValue(condition.secondVar, table: table);
       } else {
         condition.secondVar = this.getTypedSqlFromValue(condition.secondVar);
       }
@@ -169,7 +169,7 @@ class SQLAdapter {
       List<String> sorts = new List<String>();
       for (String sortFieldName in select.sorts.keys) {
         TypedSQL sortFieldSql =
-            this.getTypedSqlFromValue(sortFieldName, select.table);
+            this.getTypedSqlFromValue(sortFieldName, table: select.table);
         sorts.add(sortFieldSql.toSql() + ' ' + select.sorts[sortFieldName]);
       }
       sql += sorts.join(', ');
@@ -203,9 +203,14 @@ class SQLAdapter {
    */
   String constructInsertSql(Insert insert) {
     List<String> values = new List<String>();
-
-    for (var v in insert.fieldsToInsert.values) {
-      values.add(this.getTypedSqlFromValue(v).toSql());
+    
+    {
+      int indx = 1;
+      for (var v in insert.fieldsToInsert.values) {
+        String intType = getSqlType(insert.table.fields[indx]);
+        values.add(this.getTypedSqlFromValue(v, sqlType: intType).toSql());
+        ++indx;
+      }
     }
 
     String sql = 'INSERT INTO ${insert.table.tableName} (\n    ';
@@ -230,8 +235,11 @@ class SQLAdapter {
     List<String> fields = new List<String>();
 
     for (String fieldName in update.fieldsToUpdate.keys) {
-      TypedSQL fieldValue =
-          this.getTypedSqlFromValue(update.fieldsToUpdate[fieldName]);
+      String intType = getSqlType(update.table.fields.
+          firstWhere((Field f) => f.fieldName == fieldName));
+      
+      TypedSQL fieldValue = 
+        this.getTypedSqlFromValue(update.fieldsToUpdate[fieldName], sqlType: intType);
       fieldName = SQL.camelCaseToUnderscore(fieldName);
       fields.add(fieldName + ' = ' + fieldValue.toSql());
     }
@@ -363,6 +371,9 @@ class SQLAdapter {
       case 'LinkedHashMap':
         dbTypeName = 'json';
         break;
+      case 'dynamic':
+        dbTypeName = 'json';
+        break;
     }
     return dbTypeName;
   }
@@ -379,7 +390,8 @@ class SQLAdapter {
    * If it is provided and if instanceFieldValue is [String] it will be compared
    * with all of the table field names.
    */
-  TypedSQL getTypedSqlFromValue(var instanceFieldValue, [Table table = null]) {
+  TypedSQL getTypedSqlFromValue(var instanceFieldValue,
+                                {Table table : null, String sqlType : null }) {
     if (instanceFieldValue is String && table != null) {
       for (Field f in table.fields) {
         if (f.fieldName == instanceFieldValue) {
@@ -391,19 +403,39 @@ class SQLAdapter {
     }
 
     TypedSQL valueSql;
-
-    if (instanceFieldValue == null) {
-      valueSql = new NullSQL();
-    } else if (instanceFieldValue is String) {
-      valueSql = new StringSQL(instanceFieldValue);
-    } else if (instanceFieldValue is List) {
-      valueSql = new ListSQL(instanceFieldValue);
-    } else if (instanceFieldValue is DateTime) {
-      valueSql = new DateTimeSQL(instanceFieldValue);
-    } else {
-      valueSql = new RawSQL(instanceFieldValue);
+    
+    if (sqlType != null) {
+      valueSql = getTypedSqlFromCustomType(instanceFieldValue, sqlType);
+    }
+    if (valueSql == null) {
+      if (instanceFieldValue == null) {
+        valueSql = new NullSQL();
+      } else if (instanceFieldValue is String) {
+        valueSql = new StringSQL(instanceFieldValue);
+      } else if (instanceFieldValue is List) {
+        valueSql = new ListSQL(instanceFieldValue);
+      } else if(instanceFieldValue is DateTime){
+        valueSql = new DateTimeSQL(instanceFieldValue);
+      } else {
+        valueSql = new RawSQL(instanceFieldValue);
+      }
     }
 
     return valueSql;
+  }
+  
+  TypedSQL getTypedSqlFromCustomType(var fieldValue, String type) {
+    TypedSQL ret = null;
+    
+    switch(type) {
+      case 'json':
+        ret = new JSONSQL(fieldValue);
+      break;
+      case 'jsonb':
+        ret = new JSONSQL(fieldValue);
+      break;
+    }
+    
+    return ret;
   }
 }

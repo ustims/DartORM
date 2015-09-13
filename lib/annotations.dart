@@ -22,6 +22,8 @@ class DBTable {
   String get name => _dbTableName;
 }
 
+typedef dynamic FieldConverter(var value);
+
 /**
  * Database field annotation.
  *
@@ -30,10 +32,14 @@ class DBTable {
  */
 class DBField {
   final String _dbFieldName;
-
   const DBField([String this._dbFieldName]);
 
   String get name => _dbFieldName;
+}
+
+class DBFieldConverter {
+  final FieldConverter converter;
+  const DBFieldConverter([this.converter]);
 }
 
 class DBFieldPrimaryKey {
@@ -151,6 +157,8 @@ class AnnotationsParser {
         field.type = annotationMirror.reflectee.type;
       } else if (annotationTypeName == 'DBFieldDefault') {
         field.defaultValue = annotationMirror.reflectee.defaultValue;
+      } else if (annotationTypeName == 'DBFieldConverter') {
+        field.converter = annotationMirror.reflectee.converter;
       }
     }
 

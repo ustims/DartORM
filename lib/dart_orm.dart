@@ -3,6 +3,7 @@ library dart_orm;
 import 'dart:mirrors';
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:logging/logging.dart';
 
@@ -210,6 +211,9 @@ class FindBase extends Select {
 
         for (Field field in modelTable.fields) {
           var fieldValue = row[field.fieldName];
+          if (field.converter != null) {
+            fieldValue = field.converter(fieldValue);
+          }
           newInstance.setField(field.constructedFromPropertyName, fieldValue);
         }
 

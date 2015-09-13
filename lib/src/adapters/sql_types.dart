@@ -49,3 +49,12 @@ class DateTimeSQL extends TypedSQL {
     return '\'${d.toIso8601String()}\'';
   }
 }
+
+class JSONSQL extends TypedSQL {
+  JSONSQL(dynamic object): super(object);
+
+  String toSql() {
+    var tmp = '\'${JSON.encode(_value)}\'';
+    return tmp;
+  }
+}

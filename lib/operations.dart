@@ -273,6 +273,11 @@ class Field {
 
   dynamic defaultValue;
   Symbol constructedFromPropertyName;
+  
+  /**
+   *  Converter for value
+   */
+  FieldConverter converter = null; 
 }
 
 class Table {
