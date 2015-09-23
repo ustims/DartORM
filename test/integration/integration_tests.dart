@@ -26,44 +26,42 @@ class User extends ORM.Model {
   @ORM.DBField()
   DateTime created;
 
-  String toString() {
-    return 'User { id: $id, ' +
-        'givenName: \'$givenName\', familyName: \'$familyName\', weight: \'$weight\' }';
-  }
+  String toString() => "User { id: $id, "
+      "givenName: '$givenName', familyName: '$familyName', weight: '$weight' }";
 }
 
 Future primaryKeyTestCase() async {
-  User u = new User();
-  u.givenName = 'Sergey';
-  u.familyName = 'Ustimenko';
+  User u = new User()
+    ..givenName = 'Sergey'
+    ..familyName = 'Ustimenko';
   await u.save();
   expect(u.id, 1);
 
-  User u2 = new User();
-  u2.givenName = 'Sergey2';
-  u2.familyName = 'Ustimenko2';
+  User u2 = new User()
+    ..givenName = 'Sergey2'
+    ..familyName = 'Ustimenko2';
   await u2.save();
   expect(u2.id, 2);
 
-  User u3 = new User();
-  u3.givenName = 'Sergey3';
-  u3.familyName = 'Ustimenko3';
+  User u3 = new User()
+    ..givenName = 'Sergey3'
+    ..familyName = 'Ustimenko3';
   await u3.save();
   expect(u3.id, 3);
 
-  User u4 = new User();
-  u4.givenName = 'Sergey4';
-  u4.familyName = 'Ustimenko4';
+  User u4 = new User()
+    ..givenName = 'Sergey4'
+    ..familyName = 'Ustimenko4';
   await u4.save();
   expect(u4.id, 4);
 }
 
 Future saveTestCase() async {
   // first lets try to create a new user and save it to db
-  User u = new User();
-  u.givenName = 'Sergey';
-  u.familyName = 'Ustimenko';
-  u.weight = 123.456;
+  User u = new User()
+    ..givenName = 'Sergey'
+    ..familyName = 'Ustimenko'
+    ..weight = 123.456;
   await u.save();
 
   // that should give him an 'id', so lets use that id to find him
@@ -113,10 +111,10 @@ Future findMultipleTestCase() async {
 }
 
 Future dateTimeTestCase() async {
-  User u = new User();
-  u.givenName = 'Sergey';
   DateTime now = new DateTime.now();
-  u.created = now;
+  User u = new User()
+    ..givenName = 'Sergey'
+    ..created = now;
 
   await u.save();
 
@@ -127,9 +125,9 @@ Future dateTimeTestCase() async {
   // TODO: investigate why db drivers or dart makes this
   expect(difference < 1000, true);
 
-  User futureUser = new User();
-  futureUser.givenName = 'Bilbo';
-  futureUser.created = new DateTime(2500, DateTime.JANUARY, 1, 12, 12, 12);
+  User futureUser = new User()
+    ..givenName = 'Bilbo'
+    ..created = new DateTime(2500, DateTime.JANUARY, 1, 12, 12, 12);
   await futureUser.save();
 
   // TODO: timezones need to be tested.
@@ -149,76 +147,74 @@ Future dateTimeTestCase() async {
   expect(foundBiggerThan.length, 1);
 }
 
-class IntegrationTests {
-  static allTests() {
-    test('PrimaryKey', () async {
-      await primaryKeyTestCase();
-    });
-    test('FindOne', () async {
-      await findOneTestCase();
-    });
-    test('FindMultiple', () async {
-      await findMultipleTestCase();
-    });
-    test('Save', () async {
-      await saveTestCase();
-    });
-    test('DateTime', () async {
-      await dateTimeTestCase();
-    });
-  }
+allTests() {
+  test('PrimaryKey', () async {
+    await primaryKeyTestCase();
+  });
+  test('FindOne', () async {
+    await findOneTestCase();
+  });
+  test('FindMultiple', () async {
+    await findMultipleTestCase();
+  });
+  test('Save', () async {
+    await saveTestCase();
+  });
+  test('DateTime', () async {
+    await dateTimeTestCase();
+  });
+}
 
-  static execute() async {
-    // This will scan current isolate
-    // for classes annotated with DBTable
-    // and store sql definitions for them in memory
-    ORM.AnnotationsParser.initialize();
+Future runIntegrationTests() async {
+  // This will scan current isolate
+  // for classes annotated with DBTable
+  // and store sql definitions for them in memory
+  ORM.AnnotationsParser.initialize();
 
-    PostgresqlDBAdapter postgresqlAdapter = new PostgresqlDBAdapter(
-        'postgres://dart_orm_test:dart_orm_test@localhost:5432/dart_orm_test');
-    await postgresqlAdapter.connect();
-    ORM.Model.ormAdapter = postgresqlAdapter;
-    bool migrationResult = await ORM.Migrator.migrate();
-    assert(migrationResult);
+  PostgresqlDBAdapter postgresqlAdapter = new PostgresqlDBAdapter(
+      'postgres://dart_orm_test:dart_orm_test@localhost:5432/dart_orm_test');
+  await postgresqlAdapter.connect();
+  ORM.Model.ormAdapter = postgresqlAdapter;
+  bool migrationResult = await ORM.Migrator.migrate();
+  assert(migrationResult);
 
-    MongoDBAdapter mongoAdapter = new MongoDBAdapter(
-        'mongodb://dart_orm_test:dart_orm_test@127.0.0.1/dart_orm_test');
-    await mongoAdapter.connect();
-    ORM.Model.ormAdapter = mongoAdapter;
-    migrationResult = await ORM.Migrator.migrate();
-    assert(migrationResult);
+  MongoDBAdapter mongoAdapter = new MongoDBAdapter(
+      'mongodb://dart_orm_test:dart_orm_test@127.0.0.1/dart_orm_test');
+  await mongoAdapter.connect();
+  ORM.Model.ormAdapter = mongoAdapter;
+  migrationResult = await ORM.Migrator.migrate();
+  assert(migrationResult);
 
-    MySQLDBAdapter mysqlAdapter = new MySQLDBAdapter(
-        'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test');
-    await mysqlAdapter.connect();
-    ORM.Model.ormAdapter = mysqlAdapter;
-    migrationResult = await ORM.Migrator.migrate();
-    assert(migrationResult);
+  MySQLDBAdapter mysqlAdapter = new MySQLDBAdapter(
+      'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test');
+  await mysqlAdapter.connect();
+  ORM.Model.ormAdapter = mysqlAdapter;
+  migrationResult = await ORM.Migrator.migrate();
+  assert(migrationResult);
 
-    group('Integration tests:', () {
-      group('PostgreSQL ->', () {
-        setUp(() {
-          ORM.Model.ormAdapter = postgresqlAdapter;
-        });
-
-        allTests();
+  group('Integration tests:', () {
+    group('PostgreSQL ->', () {
+      setUp(() {
+        ORM.Model.ormAdapter = postgresqlAdapter;
       });
 
-      group('MySQL ->', () {
-        setUp(() {
-          ORM.Model.ormAdapter = mysqlAdapter;
-        });
-
-        allTests();
-      });
-
-      group('MongoDB ->', () {
-        setUp(() {
-          ORM.Model.ormAdapter = mongoAdapter;
-        });
-
-        allTests();
-      });
+      allTests();
     });
-  }
+
+    group('MySQL ->', () {
+      setUp(() {
+        ORM.Model.ormAdapter = mysqlAdapter;
+      });
+
+      allTests();
+    });
+
+    group('MongoDB ->', () {
+      setUp(() {
+        ORM.Model.ormAdapter = mongoAdapter;
+      });
+
+      allTests();
+    });
+  });
 }

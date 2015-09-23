@@ -1,5 +1,5 @@
 name: dart_orm
-version: 0.0.14
+version: 0.1.0-dev
 description: >
   Easy-to-use and easy-to-setup database ORM for dart.
 author: Ustimenko Sergey <ustims@gmail.com>
@@ -7,7 +7,7 @@ homepage: https://github.com/ustims/DartORM
 dependencies:
 
 dev_dependencies:
-  unittest: '0.10.0'
+  unittest: '>=0.10.0 <0.12.0'
   args: any
   coverage: any
   dart_orm_adapter_postgresql: any

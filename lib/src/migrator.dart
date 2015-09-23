@@ -1,4 +1,13 @@
-part of dart_orm;
+library dart_orm.migrator;
+
+import 'dart:async';
+
+import 'package:logging/logging.dart';
+
+import 'adapter.dart';
+import 'annotations.dart';
+import 'model.dart';
+import 'operations.dart';
 
 final Logger log = new Logger('Migrator');
 
@@ -55,9 +64,9 @@ class Migrator {
       }
 
       // all tables created, lets insert version info
-      OrmInfoTable ormInfo = new OrmInfoTable();
-      ormInfo.currentVersion = 0;
-      ormInfo.tableDefinitions = tableDefinitions.join('\n');
+      OrmInfoTable ormInfo = new OrmInfoTable()
+        ..currentVersion = 0
+        ..tableDefinitions = tableDefinitions.join('\n');
       return await ormInfo.save();
     } catch (err, stack) {
       log.severe('Failed to create tables.', err, stack);
