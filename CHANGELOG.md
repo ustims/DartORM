@@ -1,3 +1,8 @@
+0.1.0
+-----
+
+- Removed unmaintained `MemoryAdapter`.
+
 0.0.14
 ------
 

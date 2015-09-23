@@ -11,7 +11,6 @@ part 'annotations.dart';
 part 'src/adapters/sql_types.dart';
 part 'adapter.dart';
 part 'src/adapters/sql.dart';
-part 'src/adapters/memory.dart';
 part 'migrator.dart';
 
 class Model {
