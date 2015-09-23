@@ -6,12 +6,12 @@ import 'dart:collection';
 
 import 'package:logging/logging.dart';
 
-part 'operations.dart';
-part 'annotations.dart';
-part 'src/adapters/sql_types.dart';
-part 'adapter.dart';
-part 'src/adapters/sql.dart';
-part 'migrator.dart';
+part 'src/adapter.dart';
+part 'src/annotations.dart';
+part 'src/migrator.dart';
+part 'src/operations.dart';
+part 'src/sql_types.dart';
+part 'src/sql.dart';
 
 class Model {
   Table _tableDefinition = null;
