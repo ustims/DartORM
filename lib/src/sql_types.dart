@@ -1,4 +1,4 @@
-part of dart_orm;
+library dart_orm.sql_types;
 
 abstract class TypedSQL {
   dynamic _value;

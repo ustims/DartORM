@@ -1,4 +1,13 @@
-part of dart_orm;
+library dart_orm.migrator;
+
+import 'dart:async';
+
+import 'package:logging/logging.dart';
+
+import 'adapter.dart';
+import 'annotations.dart';
+import 'model.dart';
+import 'operations.dart';
 
 final Logger log = new Logger('Migrator');
 

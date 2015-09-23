@@ -1,4 +1,10 @@
-part of dart_orm;
+library dart_orm.sql;
+
+import 'dart:async';
+
+import 'annotations.dart';
+import 'operations.dart';
+import 'sql_types.dart';
 
 class SQLAdapter {
   dynamic _connection;

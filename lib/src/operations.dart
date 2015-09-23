@@ -1,4 +1,6 @@
-part of dart_orm;
+library dart_orm.operations;
+
+import 'dart:collection';
 
 class ConditionLogic {
   static String AND = 'AND';

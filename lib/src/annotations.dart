@@ -1,4 +1,9 @@
-part of dart_orm;
+library dart_orm.annotations;
+
+import 'dart:mirrors';
+
+import 'model.dart';
+import 'operations.dart';
 
 /**
  * Database table annotation. If some class wants to be orm-enabled,

@@ -1,4 +1,8 @@
-part of dart_orm;
+library dart_orm.adapter;
+
+import 'dart:async';
+
+import 'operations.dart';
 
 /**
  * Base interface with database operations methods.
