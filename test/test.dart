@@ -144,7 +144,7 @@ void main(List<String> arguments) {
 
   unittestConfiguration = new ShutdownConf();
 
-  IntegrationTests.execute();
+  runIntegrationTests();
 }
 
 class ShutdownConf extends SimpleConfiguration {
