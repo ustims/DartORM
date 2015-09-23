@@ -64,9 +64,9 @@ class Migrator {
       }
 
       // all tables created, lets insert version info
-      OrmInfoTable ormInfo = new OrmInfoTable();
-      ormInfo.currentVersion = 0;
-      ormInfo.tableDefinitions = tableDefinitions.join('\n');
+      OrmInfoTable ormInfo = new OrmInfoTable()
+        ..currentVersion = 0
+        ..tableDefinitions = tableDefinitions.join('\n');
       return await ormInfo.save();
     } catch (err, stack) {
       log.severe('Failed to create tables.', err, stack);

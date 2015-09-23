@@ -3,9 +3,9 @@ library dart_orm.operations;
 import 'dart:collection';
 
 class ConditionLogic {
-  static String AND = 'AND';
-  static String OR = 'OR';
-  static String IN = 'IN';
+  static const String AND = 'AND';
+  static const String OR = 'OR';
+  static const String IN = 'IN';
 }
 
 class SQL {
@@ -38,17 +38,17 @@ class Condition {
   /**
    * First variable for comparation.
    */
-  dynamic _firstVar = null;
+  dynamic firstVar;
 
   /**
    * Second variable for comparation.
    */
-  dynamic _secondVar = null;
+  dynamic secondVar;
 
   /**
    * Variable comparation rule. For example: '=' or '<'.
    */
-  String _condition = null;
+  String condition;
 
   /**
    * Condition logic.
@@ -56,48 +56,22 @@ class Condition {
    * is appended to another condition and here will be append
    * logic such as 'AND' or 'OR'
    */
-  String _logic = null;
+  String logic;
 
   List<Condition> conditionQueue;
 
-  Condition(
-      dynamic this._firstVar, String this._condition, dynamic this._secondVar,
-      [this._logic = null]) {
+  Condition(this.firstVar, this.condition, this.secondVar, [this.logic]) {
     conditionQueue = new List<Condition>();
   }
 
-  dynamic get firstVar => _firstVar;
-
-  void set firstVar(var value) {
-    _firstVar = value;
-  }
-
-  dynamic get secondVar => _secondVar;
-
-  void set secondVar(var value) {
-    _secondVar = value;
-  }
-
-  dynamic get condition => _condition;
-
-  void set condition(String condition) {
-    _condition = condition;
-  }
-
-  String get logic => _logic;
-
-  void set logic(String logic) {
-    _logic = logic;
-  }
-
   Condition and(Condition cond) {
-    cond._logic = ConditionLogic.AND;
+    cond.logic = ConditionLogic.AND;
     conditionQueue.add(cond);
     return this;
   }
 
-  or(Condition cond) {
-    cond._logic = ConditionLogic.OR;
+  Condition or(Condition cond) {
+    cond.logic = ConditionLogic.OR;
     conditionQueue.add(cond);
     return this;
   }
@@ -134,34 +108,25 @@ class BiggerThan extends Condition {
 }
 
 class Join {
-  String joinType = null;
-  String tableName = null;
-  String tableAlias = null;
-  Condition joinCondition = null;
+  String joinType;
+  String tableName;
+  String tableAlias;
+  Condition joinCondition;
 
   Join(this.joinType, this.tableName, this.tableAlias, this.joinCondition);
 }
 
 class Select extends SQL {
-  List<String> columnsToSelect = null;
+  final Map<String, String> sorts = new Map<String, String>();
+  final List<Join> joins = new List<Join>();
 
-  Table table = null;
+  List<String> columnsToSelect;
+  Table table;
+  Condition condition;
+  int limit;
+  int offset;
 
-  Condition _condition = null;
-  List<Join> _joins = new List<Join>();
-  Map<String, String> _sorts = new Map<String, String>();
-  int limit = null;
-  int offset = null;
-
-  Select(List<String> columnsToSelect) {
-    this.columnsToSelect = columnsToSelect;
-  }
-
-  Condition get condition => _condition;
-
-  List<Join> get joins => _joins;
-
-  Map<String, String> get sorts => _sorts;
+  Select(this.columnsToSelect);
 
   void setLimit(int limit) {
     this.limit = limit;
@@ -171,25 +136,25 @@ class Select extends SQL {
     this.offset = offset;
   }
 
-  join(String joinType, String tableName, String tableAlias,
+  void join(String joinType, String tableName, String tableAlias,
       Condition joinCondition) {
-    this._joins.add(new Join(joinType, tableName, tableAlias, joinCondition));
+    joins.add(new Join(joinType, tableName, tableAlias, joinCondition));
   }
 
-  leftJoin(String tableName, String tableAlias, Condition joinCondition) {
-    this._joins.add(new Join('LEFT', tableName, tableAlias, joinCondition));
+  void leftJoin(String tableName, String tableAlias, Condition joinCondition) {
+    joins.add(new Join('LEFT', tableName, tableAlias, joinCondition));
   }
 
-  rightJoin(String tableName, String tableAlias, Condition joinCondition) {
-    this._joins.add(new Join('RIGHT', tableName, tableAlias, joinCondition));
+  void rightJoin(String tableName, String tableAlias, Condition joinCondition) {
+    joins.add(new Join('RIGHT', tableName, tableAlias, joinCondition));
   }
 
-  where(Condition cond) {
-    this._condition = cond;
+  void where(Condition cond) {
+    this.condition = cond;
   }
 
-  orderBy(fieldName, String order) {
-    _sorts[fieldName] = order;
+  void orderBy(fieldName, String order) {
+    sorts[fieldName] = order;
   }
 
   String toString() {
@@ -200,48 +165,44 @@ class Select extends SQL {
 class Update {
   Table table;
 
-  LinkedHashMap<String, dynamic> fieldsToUpdate =
+  final LinkedHashMap<String, dynamic> fieldsToUpdate =
       new LinkedHashMap<String, dynamic>();
-
-  Condition _condition;
 
   Update(Table this.table);
 
-  Condition get condition => _condition;
+  Condition condition;
 
   set(String fieldName, dynamic fieldValue) {
     fieldsToUpdate[fieldName] = fieldValue;
   }
 
-  where(Condition cond) {
-    _condition = cond;
+  void where(Condition cond) {
+    condition = cond;
   }
 }
 
 class Delete {
   Table table;
 
-  Condition _condition;
-
   Delete(Table this.table);
 
-  Condition get condition => _condition;
+  Condition condition;
 
-  where(Condition cond) {
-    _condition = cond;
+  void where(Condition cond) {
+    condition = cond;
   }
 }
 
 class Insert {
   Table table;
-  LinkedHashMap<String, dynamic> _fieldsToInsert =
+  final LinkedHashMap<String, dynamic> _fieldsToInsert =
       new LinkedHashMap<String, dynamic>();
 
   Insert(Table this.table);
 
   LinkedHashMap<String, dynamic> get fieldsToInsert => _fieldsToInsert;
 
-  value(String fieldName, dynamic fieldValue) {
+  void value(String fieldName, dynamic fieldValue) {
     _fieldsToInsert[fieldName] = fieldValue;
   }
 }

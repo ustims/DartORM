@@ -1,10 +1,9 @@
 library dart_orm.sql_types;
 
-abstract class TypedSQL {
-  dynamic _value;
-  dynamic get value => _value;
+abstract class TypedSQL<T> {
+  final T value;
 
-  TypedSQL(dynamic this._value);
+  TypedSQL(this.value);
 
   String toSql();
 }
@@ -12,40 +11,29 @@ abstract class TypedSQL {
 class RawSQL extends TypedSQL {
   RawSQL(dynamic value) : super(value);
 
-  String toSql() {
-    return _value.toString();
-  }
+  String toSql() => value.toString();
 }
 
-class StringSQL extends TypedSQL {
+class StringSQL extends TypedSQL<String> {
   StringSQL(String value) : super(value);
 
-  String toSql() {
-    return "'$_value'";
-  }
+  String toSql() => "'$value'";
 }
 
 class NullSQL extends TypedSQL {
   NullSQL() : super(null);
 
-  String toSql() {
-    return 'NULL';
-  }
+  String toSql() => 'NULL';
 }
 
-class ListSQL extends TypedSQL {
+class ListSQL extends TypedSQL<List> {
   ListSQL(List list) : super(list);
 
-  String toSql() {
-    return '(' + _value.join(',') + ')';
-  }
+  String toSql() => '(${value.join(',')})';
 }
 
-class DateTimeSQL extends TypedSQL {
+class DateTimeSQL extends TypedSQL<DateTime> {
   DateTimeSQL(DateTime datetime) : super(datetime);
 
-  String toSql() {
-    DateTime d = _value;
-    return '\'${d.toIso8601String()}\'';
-  }
+  String toSql() => "'${value.toIso8601String()}'";
 }

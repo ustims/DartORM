@@ -7,15 +7,7 @@ import 'operations.dart';
 import 'sql_types.dart';
 
 class SQLAdapter {
-  dynamic _connection;
-
-  SQLAdapter() {}
-
-  get connection => _connection;
-
-  void set connection(dynamic connection) {
-    _connection = connection;
-  }
+  dynamic connection;
 
   /**
    * Returns list of maps which keys are column names
@@ -24,7 +16,7 @@ class SQLAdapter {
   Future<List<Map>> select(Select select) async {
     String sqlQueryString = this.constructSelectSql(select);
 
-    List rawResults = await _connection.query(sqlQueryString).toList();
+    List rawResults = await connection.query(sqlQueryString).toList();
     List<Map> results = new List<Map>();
 
     // sql adapters usually returns a list of fields without field names
@@ -46,7 +38,7 @@ class SQLAdapter {
   Future<int> insert(Insert insert) async {
     String sqlQueryString = this.constructInsertSql(insert);
 
-    var result = await _connection.query(sqlQueryString).toList();
+    var result = await connection.query(sqlQueryString).toList();
     if (result.length > 0) {
       // if we have any results, here will be returned new primary key
       // of the inserted row
@@ -59,19 +51,19 @@ class SQLAdapter {
 
   Future<int> update(Update update) async {
     String sqlQueryString = this.constructUpdateSql(update);
-    var affectedRows = await _connection.execute(sqlQueryString);
+    var affectedRows = await connection.execute(sqlQueryString);
     return affectedRows;
   }
 
   Future<int> delete(Delete delete) async {
     String sqlQueryString = this.constructDeleteSql(delete);
-    var affectedRows = await _connection.execute(sqlQueryString);
+    var affectedRows = await connection.execute(sqlQueryString);
     return affectedRows;
   }
 
   Future createTable(Table table) async {
     String sqlQueryString = this.constructTableSql(table);
-    var result = await _connection.execute(sqlQueryString);
+    var result = await connection.execute(sqlQueryString);
     return result;
   }
 

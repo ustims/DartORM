@@ -13,8 +13,6 @@ import 'operations.dart';
  * and its data is used to construct [DBTableSQL] instances.
  */
 class DBTable {
-  final String _dbTableName;
-
   /**
    * New instance annotation.
    * By default, database table name
@@ -22,9 +20,9 @@ class DBTable {
    * One can override this by providing
    * String parameter 'tableName' to constructor.
    */
-  const DBTable([String this._dbTableName]);
+  const DBTable([this.name]);
 
-  String get name => _dbTableName;
+  final String name;
 }
 
 /**
@@ -34,11 +32,9 @@ class DBTable {
  * should be annotated with @DBField
  */
 class DBField {
-  final String _dbFieldName;
+  const DBField([this.name]);
 
-  const DBField([String this._dbFieldName]);
-
-  String get name => _dbFieldName;
+  final String name;
 }
 
 class DBFieldPrimaryKey {
@@ -46,25 +42,19 @@ class DBFieldPrimaryKey {
 }
 
 class DBFieldType {
-  final String _type;
+  const DBFieldType(this.type);
 
-  const DBFieldType(String this._type);
-
-  String get type => _type;
+  final String type;
 }
 
 class DBFieldDefault {
-  final dynamic _defaultValue;
+  const DBFieldDefault(this.defaultValue);
 
-  const DBFieldDefault(this._defaultValue);
-
-  String get defaultValue => _defaultValue;
+  final String defaultValue;
 }
 
 class AnnotationsParser {
-  static Map<String, Table> _ormClasses = new Map<String, Table>();
-
-  static get ormClasses => _ormClasses;
+  static final Map<String, Table> ormClasses = new Map<String, Table>();
 
   static void initialize() {
     List<ClassMirror> classMirrorsWithMetadata = getAllClassesWithMetadata();
@@ -77,7 +67,7 @@ class AnnotationsParser {
 
         if (metaClassName == 'DBTable') {
           Table table = AnnotationsParser.constructTable(classMirror);
-          _ormClasses[modelClassName] = table;
+          ormClasses[modelClassName] = table;
         }
       }
     }
@@ -110,15 +100,13 @@ class AnnotationsParser {
   static Table getTableForType(Type modelType) {
     ClassMirror modelMirror = reflectClass(modelType);
     String modelClassName = MirrorSystem.getName(modelMirror.simpleName);
-    return _ormClasses[modelClassName];
+    return ormClasses[modelClassName];
   }
 
   /**
    * Returns [Table] definition object for specified class name.
    */
-  static Table getTableForClassName(String className) {
-    return _ormClasses[className];
-  }
+  static Table getTableForClassName(String className) => ormClasses[className];
 
   /**
    * Returns [Table] definition object for specified model class instance.
@@ -127,7 +115,7 @@ class AnnotationsParser {
     InstanceMirror mirror = reflect(instance);
     String instanceClassName = MirrorSystem.getName(mirror.type.simpleName);
 
-    return _ormClasses[instanceClassName];
+    return ormClasses[instanceClassName];
   }
 
   static dynamic getPropertyValueForField(Field field, Model instance) {
@@ -174,14 +162,9 @@ class AnnotationsParser {
   /**
    * Scans DB* annotations on class fields and constructs DBTableSQL instance
    */
-  static Table constructTable(ClassMirror modelClassMirror) {
-    Table table = new Table();
-
-    table.className = _getTableName(modelClassMirror);
-    table.fields = _getFields(modelClassMirror);
-
-    return table;
-  }
+  static Table constructTable(ClassMirror modelClassMirror) => new Table()
+    ..className = _getTableName(modelClassMirror)
+    ..fields = _getFields(modelClassMirror);
 
   static String _getTableName(ClassMirror modelClassMirror) {
     var classMetadata = modelClassMirror.metadata;
@@ -213,7 +196,6 @@ class AnnotationsParser {
     return fields;
   }
 
-  static String getTypeName(DeclarationMirror t) {
-    return MirrorSystem.getName(t.simpleName);
-  }
+  static String getTypeName(DeclarationMirror t) =>
+      MirrorSystem.getName(t.simpleName);
 }

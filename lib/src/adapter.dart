@@ -50,11 +50,11 @@ abstract class DBAdapter {
  * Adapter implementation must wrap all those exceptions to one of the below.
  */
 class AdapterException implements Exception {
-  static final String ErrTableNotExist = 'Table does not exist';
-  static final String ErrColumnNotExist = 'Column does not exist';
-  static final String ErrUnknown = 'Unknown database error';
+  static const String ErrTableNotExist = 'Table does not exist';
+  static const String ErrColumnNotExist = 'Column does not exist';
+  static const String ErrUnknown = 'Unknown database error';
 
-  String message;
+  final String message;
 
   AdapterException(this.message);
 }
@@ -68,12 +68,12 @@ class ColumnNotExistException extends AdapterException {
 }
 
 class UnknownAdapterException extends AdapterException {
-  dynamic originalException;
+  final dynamic originalException;
 
   UnknownAdapterException(this.originalException)
       : super(AdapterException.ErrUnknown);
 
-  toString() {
+  String toString() {
     return originalException.toString();
   }
 }

@@ -8,18 +8,18 @@ import 'annotations.dart';
 import 'operations.dart';
 
 class Model {
-  Table _tableDefinition = null;
-  static DBAdapter _sAdapter = null;
+  Table _tableDefinition;
+  static DBAdapter _sAdapter;
 
   Model() {
     _tableDefinition = AnnotationsParser.getTableForInstance(this);
   }
 
-  static set ormAdapter(DBAdapter adapter) {
+  static void set ormAdapter(DBAdapter adapter) {
     _sAdapter = adapter;
   }
 
-  static get ormAdapter => _sAdapter;
+  static DBAdapter get ormAdapter => _sAdapter;
 
   /**
    * Returns DBFieldSQL instance
@@ -160,23 +160,20 @@ class Model {
 }
 
 class FindBase extends Select {
-  Type _modelType;
-  Table table;
+  final Type _modelType;
+  final Table table;
 
-  FindBase(Type this._modelType) : super(['*']) {
-    table = AnnotationsParser.getTableForType(_modelType);
-  }
+  FindBase(Type modelType)
+      : this._modelType = modelType,
+        this.table = AnnotationsParser.getTableForType(modelType),
+        super(['*']);
 
-  whereEquals(String fieldName, var fieldValue) {
+  whereEquals(String fieldName, dynamic fieldValue) {
     for (Field field in table.fields) {
       if (fieldName == field.fieldName) {
         where(new Equals(fieldName, fieldValue));
       }
     }
-  }
-
-  orderBy(String fieldName, String order) {
-    super.orderBy(fieldName, order);
   }
 
   static Future<Model> _executeFindOne(Type modelType, Select sql) async {
@@ -188,48 +185,38 @@ class FindBase extends Select {
     }
   }
 
-  static Future<List<Model>> _executeFind(Type modelType, Select selectSql) {
-    Completer completer = new Completer();
-
+  static Future<List<Model>> _executeFind(
+      Type modelType, Select selectSql) async {
     Table modelTable = AnnotationsParser.getTableForType(modelType);
     ClassMirror modelMirror = reflectClass(modelType);
 
     List<Model> foundInstances = new List<Model>();
 
-    Model.ormAdapter.select(selectSql).then((List rows) {
-      for (Map<String, dynamic> row in rows) {
-        InstanceMirror newInstance =
-            modelMirror.newInstance(new Symbol(''), [], new Map());
+    var rows = await Model.ormAdapter.select(selectSql);
+    for (Map<String, dynamic> row in rows) {
+      InstanceMirror newInstance =
+          modelMirror.newInstance(new Symbol(''), [], new Map());
 
-        for (Field field in modelTable.fields) {
-          var fieldValue = row[field.fieldName];
-          newInstance.setField(field.constructedFromPropertyName, fieldValue);
-        }
-
-        foundInstances.add(newInstance.reflectee);
+      for (Field field in modelTable.fields) {
+        var fieldValue = row[field.fieldName];
+        newInstance.setField(field.constructedFromPropertyName, fieldValue);
       }
 
-      completer.complete(foundInstances);
-    }).catchError((e) {
-      completer.completeError(e);
-    });
+      foundInstances.add(newInstance.reflectee);
+    }
 
-    return completer.future;
+    return foundInstances;
   }
 }
 
 class Find extends FindBase {
   Find(Type modelType) : super(modelType);
 
-  Future<List<Model>> execute() {
-    return FindBase._executeFind(_modelType, this);
-  }
+  Future<List<Model>> execute() => FindBase._executeFind(_modelType, this);
 }
 
 class FindOne extends FindBase {
   FindOne(Type modelType) : super(modelType);
 
-  Future<Model> execute() {
-    return FindBase._executeFindOne(_modelType, this);
-  }
+  Future<Model> execute() => FindBase._executeFindOne(_modelType, this);
 }
