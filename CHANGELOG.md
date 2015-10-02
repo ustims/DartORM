@@ -1,3 +1,9 @@
+0.1.1
+-----
+
+- Refactored DBTable annotation. Now it allows to specify target class which 
+  allows to split class implementation and annotations.
+
 0.1.0
 -----
 

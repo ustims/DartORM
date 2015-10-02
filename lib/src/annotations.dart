@@ -20,9 +20,11 @@ class DBTable {
    * One can override this by providing
    * String parameter 'tableName' to constructor.
    */
-  const DBTable([this.name]);
+  const DBTable([this.name, this.annotationTarget]);
 
   final String name;
+
+  final Type annotationTarget;
 }
 
 /**
@@ -66,8 +68,19 @@ class AnnotationsParser {
             MirrorSystem.getName(metaInstanceMirror.type.simpleName);
 
         if (metaClassName == 'DBTable') {
+          DBTable dbTableAnnotation = (metaInstanceMirror.reflectee as DBTable);
+
+            // if annotation target is not provided then class annotated
+            // with DBTable is a model itself
           Table table = AnnotationsParser.constructTable(classMirror);
-          ormClasses[modelClassName] = table;
+
+          if(dbTableAnnotation.annotationTarget == null){
+            ormClasses[modelClassName] = table;
+          } else {
+            // we have annotation target so let's get that class
+            ClassMirror target = reflectClass(dbTableAnnotation.annotationTarget);
+            ormClasses[MirrorSystem.getName(target.simpleName)] = table;
+          }
         }
       }
     }
@@ -111,20 +124,21 @@ class AnnotationsParser {
   /**
    * Returns [Table] definition object for specified model class instance.
    */
-  static Table getTableForInstance(Model instance) {
+  static Table getTableForInstance(dynamic instance) {
     InstanceMirror mirror = reflect(instance);
     String instanceClassName = MirrorSystem.getName(mirror.type.simpleName);
 
     return ormClasses[instanceClassName];
   }
 
-  static dynamic getPropertyValueForField(Field field, Model instance) {
+  /// Returns [field] value for provided model [instance]
+  static dynamic getPropertyValueForField(Field field, dynamic instance) {
     InstanceMirror mirror = reflect(instance);
     return mirror.getField(field.constructedFromPropertyName).reflectee;
   }
 
-  static dynamic setPropertyValueForField(
-      Field field, dynamic value, Model instance) {
+  /// Allows setting [field]'s [value] on provided object instance.
+  static dynamic setPropertyValueForField(Field field, dynamic value, dynamic instance) {
     InstanceMirror mirror = reflect(instance);
     return mirror.setField(field.constructedFromPropertyName, value);
   }

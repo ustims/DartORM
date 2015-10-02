@@ -2,10 +2,12 @@ library models;
 
 import 'dart:async';
 import 'dart:mirrors';
+import 'dart:collection';
 
 import 'adapter.dart';
 import 'annotations.dart';
 import 'operations.dart';
+import 'orm.dart' as orm;
 
 class Model {
   Table _tableDefinition;
@@ -61,28 +63,8 @@ class Model {
    *
    * Throws [Exception] if model instance has not-null primary key.
    */
-  Future insert() async {
-    var primaryKeyValue = getPrimaryKeyValue();
-    if (primaryKeyValue != null) {
-      throw new Exception('insert() should not be called' +
-          'on instances with not-null primary key value, use update() instead.');
-    }
-
-    Insert insert = new Insert(_tableDefinition);
-
-    for (Field field in _tableDefinition.fields) {
-      if (!field.isPrimaryKey) {
-        insert.value(field.fieldName,
-            AnnotationsParser.getPropertyValueForField(field, this));
-      }
-    }
-
-    var newRecordId = await ormAdapter.insert(insert);
-    if (this.getPrimaryKeyField() != null) {
-      this.setPrimaryKeyValue(newRecordId);
-    }
-
-    return newRecordId;
+  Future insert() {
+    return orm.insert(this);
   }
 
   /**
@@ -91,26 +73,8 @@ class Model {
    *
    * Throws [Exception] if this model instance is null.
    */
-  Future update() async {
-    var primaryKeyValue = getPrimaryKeyValue();
-    if (primaryKeyValue == null) {
-      throw new Exception('update() should not be called' +
-          'on instances with null primary key value, use insert() instead.');
-    }
-
-    Update update = new Update(_tableDefinition);
-
-    for (Field field in _tableDefinition.fields) {
-      var value = AnnotationsParser.getPropertyValueForField(field, this);
-      if (field.isPrimaryKey) {
-        update.where(new Equals(field.fieldName, value));
-      } else {
-        update.set(field.fieldName, value);
-      }
-    }
-
-    var updateResult = await ormAdapter.update(update);
-    return updateResult;
+  Future update() {
+    return orm.update(this);
   }
 
   /**
@@ -120,26 +84,11 @@ class Model {
    * Throws [Exception] if this model instance is null.
    */
   Future delete() async {
-    var primaryKeyValue = getPrimaryKeyValue();
-    if (primaryKeyValue == null) {
-      throw new Exception('delete() should not be called' +
-          'on instances with null primary key value.');
-    }
-
-    Delete delete = new Delete(_tableDefinition);
-
-    Field field = getPrimaryKeyField();
-    if (field != null) {
-      var value = AnnotationsParser.getPropertyValueForField(field, this);
-      delete.where(new Equals(field.fieldName, value));
-    }
-
-    var deleteResult = await ormAdapter.delete(delete);
-    return deleteResult;
+    return orm.delete(this);
   }
 
   Future<bool> save() async {
-    var primaryKeyValue = getPrimaryKeyValue();
+    var primaryKeyValue = this.getPrimaryKeyValue();
 
     if (primaryKeyValue != null) {
       var updateResult = this.update();
@@ -176,7 +125,7 @@ class FindBase extends Select {
     }
   }
 
-  static Future<Model> _executeFindOne(Type modelType, Select sql) async {
+  static Future<dynamic> _executeFindOne(Type modelType, Select sql) async {
     List<Model> foundModels = await _executeFind(modelType, sql);
     if (foundModels.length > 0) {
       return foundModels.last;
@@ -185,12 +134,13 @@ class FindBase extends Select {
     }
   }
 
-  static Future<List<Model>> _executeFind(
+  static Future<List<dynamic>> _executeFind(
       Type modelType, Select selectSql) async {
+
     Table modelTable = AnnotationsParser.getTableForType(modelType);
     ClassMirror modelMirror = reflectClass(modelType);
 
-    List<Model> foundInstances = new List<Model>();
+    List<dynamic> foundInstances = new List<dynamic>();
 
     var rows = await Model.ormAdapter.select(selectSql);
     for (Map<String, dynamic> row in rows) {
@@ -212,11 +162,11 @@ class FindBase extends Select {
 class Find extends FindBase {
   Find(Type modelType) : super(modelType);
 
-  Future<List<Model>> execute() => FindBase._executeFind(_modelType, this);
+  Future<List<dynamic>> execute() => FindBase._executeFind(_modelType, this);
 }
 
 class FindOne extends FindBase {
   FindOne(Type modelType) : super(modelType);
 
-  Future<Model> execute() => FindBase._executeFindOne(_modelType, this);
+  Future<dynamic> execute() => FindBase._executeFindOne(_modelType, this);
 }

@@ -7,3 +7,5 @@ export 'src/model.dart';
 export 'src/operations.dart';
 export 'src/sql_types.dart';
 export 'src/sql.dart';
+
+export 'src/orm.dart';
