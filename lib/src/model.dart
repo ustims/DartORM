@@ -2,7 +2,6 @@ library models;
 
 import 'dart:async';
 import 'dart:mirrors';
-import 'dart:collection';
 
 import 'adapter.dart';
 import 'annotations.dart';
@@ -63,9 +62,7 @@ class Model {
    *
    * Throws [Exception] if model instance has not-null primary key.
    */
-  Future insert() {
-    return orm.insert(this);
-  }
+  Future insert() => orm.insert(this);
 
   /**
    * Updates this model instance data on database.
@@ -73,9 +70,7 @@ class Model {
    *
    * Throws [Exception] if this model instance is null.
    */
-  Future update() {
-    return orm.update(this);
-  }
+  Future update() => orm.update(this);
 
   /**
    * Deletes this model instance data on database.
@@ -83,9 +78,7 @@ class Model {
    *
    * Throws [Exception] if this model instance is null.
    */
-  Future delete() async {
-    return orm.delete(this);
-  }
+  Future delete() => orm.delete(this);
 
   Future<bool> save() async {
     var primaryKeyValue = this.getPrimaryKeyValue();
@@ -125,7 +118,7 @@ class FindBase extends Select {
     }
   }
 
-  static Future<dynamic> _executeFindOne(Type modelType, Select sql) async {
+  static Future _executeFindOne(Type modelType, Select sql) async {
     List<Model> foundModels = await _executeFind(modelType, sql);
     if (foundModels.length > 0) {
       return foundModels.last;
@@ -134,8 +127,7 @@ class FindBase extends Select {
     }
   }
 
-  static Future<List<dynamic>> _executeFind(
-      Type modelType, Select selectSql) async {
+  static Future<List> _executeFind(Type modelType, Select selectSql) async {
     Table modelTable = AnnotationsParser.getTableForType(modelType);
     ClassMirror modelMirror = reflectClass(modelType);
 

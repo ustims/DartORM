@@ -1,20 +1,26 @@
+/// This library contains all common methods for orm like insert/update/delete.
+/// It's responsible for storing list of available adapters.
 library dart_orm.orm;
 
 import 'dart:async';
-
 import 'dart:collection';
-import 'operations.dart';
-import 'annotations.dart';
-import 'adapter.dart';
 
+import 'adapter.dart';
+import 'annotations.dart';
+import 'operations.dart';
+
+/// List of all available adapters.
 LinkedHashMap<String, DBAdapter> adapters =
     new LinkedHashMap<String, DBAdapter>();
 
 String _defaultAdapter = null;
+
+/// Set default adapter that will be used for all models.
 void setDefaultAdapter(String adapterName) {
   _defaultAdapter = adapterName;
 }
 
+/// Returns default adapter
 DBAdapter getDefaultAdapter() {
   return adapters[_defaultAdapter];
 }
@@ -39,6 +45,7 @@ dynamic getPrimaryKeyValue(dynamic model) {
   return null;
 }
 
+/// Allows to set primary key [value] for [model] instance.
 void setPrimaryKeyValue(dynamic model, dynamic value) {
   Table table = AnnotationsParser.getTableForInstance(model);
 
