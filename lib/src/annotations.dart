@@ -70,15 +70,16 @@ class AnnotationsParser {
         if (metaClassName == 'DBTable') {
           DBTable dbTableAnnotation = (metaInstanceMirror.reflectee as DBTable);
 
-            // if annotation target is not provided then class annotated
-            // with DBTable is a model itself
+          // if annotation target is not provided then class annotated
+          // with DBTable is a model itself
           Table table = AnnotationsParser.constructTable(classMirror);
 
-          if(dbTableAnnotation.annotationTarget == null){
+          if (dbTableAnnotation.annotationTarget == null) {
             ormClasses[modelClassName] = table;
           } else {
             // we have annotation target so let's get that class
-            ClassMirror target = reflectClass(dbTableAnnotation.annotationTarget);
+            ClassMirror target =
+                reflectClass(dbTableAnnotation.annotationTarget);
             ormClasses[MirrorSystem.getName(target.simpleName)] = table;
           }
         }
@@ -138,7 +139,8 @@ class AnnotationsParser {
   }
 
   /// Allows setting [field]'s [value] on provided object instance.
-  static dynamic setPropertyValueForField(Field field, dynamic value, dynamic instance) {
+  static dynamic setPropertyValueForField(
+      Field field, dynamic value, dynamic instance) {
     InstanceMirror mirror = reflect(instance);
     return mirror.setField(field.constructedFromPropertyName, value);
   }

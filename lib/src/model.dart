@@ -136,7 +136,6 @@ class FindBase extends Select {
 
   static Future<List<dynamic>> _executeFind(
       Type modelType, Select selectSql) async {
-
     Table modelTable = AnnotationsParser.getTableForType(modelType);
     ClassMirror modelMirror = reflectClass(modelType);
 
