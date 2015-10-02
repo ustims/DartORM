@@ -85,7 +85,8 @@ dynamic example() async {
       'postgres://dart_orm_test:dart_orm_test@localhost:5432/dart_orm_test');
   await postgresqlAdapter.connect();
 
-  ORM.Model.ormAdapter = postgresqlAdapter;
+  ORM.addAdapter('postgres', postgresqlAdapter);
+  ORM.setDefaultAdapter('postgres');
 
   bool migrationResult = await ORM.Migrator.migrate();
   assert(migrationResult);
@@ -97,7 +98,8 @@ dynamic example() async {
       'mongodb://dart_orm_test:dart_orm_test@127.0.0.1/dart_orm_test');
   await mongoAdapter.connect();
 
-  ORM.Model.ormAdapter = mongoAdapter;
+  ORM.addAdapter('mongo', mongoAdapter);
+  ORM.setDefaultAdapter('mongo');
 
   migrationResult = await ORM.Migrator.migrate();
   assert(migrationResult);
@@ -108,7 +110,10 @@ dynamic example() async {
   MySQLDBAdapter mysqlAdapter = new MySQLDBAdapter(
       'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test');
   await mysqlAdapter.connect();
-  ORM.Model.ormAdapter = mysqlAdapter;
+
+  ORM.addAdapter('mysql', mysqlAdapter);
+  ORM.setDefaultAdapter('mysql');
+
   migrationResult = await ORM.Migrator.migrate();
   assert(migrationResult);
 

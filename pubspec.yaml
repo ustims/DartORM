@@ -1,5 +1,5 @@
 name: dart_orm
-version: 0.1.0-dev
+version: 0.1.1
 description: >
   Easy-to-use and easy-to-setup database ORM for dart.
 author: Ustimenko Sergey <ustims@gmail.com>
