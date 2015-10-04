@@ -1,4 +1,4 @@
-library dart_orm.test;
+library dart_orm.mysql_integration_test;
 
 import 'dart:io';
 
