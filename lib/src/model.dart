@@ -3,24 +3,16 @@ library models;
 import 'dart:async';
 import 'dart:mirrors';
 
-import 'adapter.dart';
 import 'annotations.dart';
 import 'operations.dart';
 import 'orm.dart' as orm;
 
 class Model {
   Table _tableDefinition;
-  static DBAdapter _sAdapter;
 
   Model() {
     _tableDefinition = AnnotationsParser.getTableForInstance(this);
   }
-
-  static void set ormAdapter(DBAdapter adapter) {
-    _sAdapter = adapter;
-  }
-
-  static DBAdapter get ormAdapter => _sAdapter;
 
   /**
    * Returns DBFieldSQL instance
@@ -133,7 +125,7 @@ class FindBase extends Select {
 
     List<dynamic> foundInstances = new List<dynamic>();
 
-    var rows = await Model.ormAdapter.select(selectSql);
+    var rows = await orm.getDefaultAdapter().select(selectSql);
     for (Map<String, dynamic> row in rows) {
       InstanceMirror newInstance =
           modelMirror.newInstance(new Symbol(''), [], new Map());

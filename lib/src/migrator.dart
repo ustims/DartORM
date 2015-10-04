@@ -8,6 +8,7 @@ import 'adapter.dart';
 import 'annotations.dart';
 import 'model.dart';
 import 'operations.dart';
+import 'orm.dart';
 
 final Logger log = new Logger('Migrator');
 
@@ -22,7 +23,7 @@ class OrmInfoTable extends Model {
 
 class Migrator {
   static Future<bool> migrate() async {
-    DBAdapter adapter = Model.ormAdapter;
+    DBAdapter adapter = getDefaultAdapter();
 
     // we store database schema and its version in
     // addition table called orm_info_table

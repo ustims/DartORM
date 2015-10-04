@@ -10,19 +10,39 @@ import 'annotations.dart';
 import 'operations.dart';
 
 /// List of all available adapters.
-LinkedHashMap<String, DBAdapter> adapters =
+final LinkedHashMap<String, DBAdapter> _adapters =
     new LinkedHashMap<String, DBAdapter>();
 
 String _defaultAdapter = null;
 
+/// Adds database adapter that could be used by orm.
+void addAdapter(String adapterName, DBAdapter adapter) {
+  if (_adapters.containsKey(adapterName)) {
+    throw new Exception('Adapter $adapterName already exists.');
+  }
+
+  _adapters[adapterName] = adapter;
+}
+
 /// Set default adapter that will be used for all models.
+/// Throws exception if there are no adapters configured.
 void setDefaultAdapter(String adapterName) {
+  if (!_adapters.containsKey(adapterName)) {
+    throw new Exception('Adapter $adapterName does not exists.');
+  }
+
   _defaultAdapter = adapterName;
 }
 
 /// Returns default adapter
+/// Throws exception if there are no adapters configured.
 DBAdapter getDefaultAdapter() {
-  return adapters[_defaultAdapter];
+  if (_adapters.length == 0) {
+    throw new Exception(
+        'ORM has no adapters. Add one with addAdapter(adapterName, adapter)');
+  }
+
+  return _adapters[_defaultAdapter];
 }
 
 /// Returns primary key value for [model] instance.
