@@ -5,7 +5,7 @@ import 'integration/integration_tests.dart';
 
 import 'package:logging/logging.dart';
 
-final Logger log = new Logger('TestRunner');
+import 'test_util.dart';
 
 void setupDBs(psql_user, psql_db, mysql_user) {
   if (psql_user.length < 1 || psql_db.length < 1 || mysql_user.length < 1) {
@@ -98,17 +98,6 @@ void setupDBs(psql_user, psql_db, mysql_user) {
   }
   """
   ]);
-}
-
-String run(String executable, List<String> arguments) {
-  var result = Process.runSync(executable, arguments);
-  if (result.stderr.length > 0) {
-    log.severe('$executable:' + result.stderr);
-  }
-  if (result.stdout.length > 0) {
-    log.info(result.stdout);
-  }
-  return result.stdout;
 }
 
 void main(List<String> arguments) {
