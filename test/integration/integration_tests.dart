@@ -7,6 +7,8 @@ import 'package:dart_orm_adapter_postgresql/dart_orm_adapter_postgresql.dart';
 import 'package:dart_orm_adapter_mongodb/dart_orm_adapter_mongodb.dart';
 import 'package:dart_orm_adapter_mysql/dart_orm_adapter_mysql.dart';
 
+import 'separate_annotations.dart';
+
 @ORM.DBTable('users')
 class User extends ORM.Model {
   @ORM.DBField()
@@ -163,6 +165,9 @@ allTests() {
   test('DateTime', () async {
     await dateTimeTestCase();
   });
+  test('SeparateAnnotations', () async {
+    await testSeparateAnnotations();
+  });
 }
 
 Future runIntegrationTests() async {
@@ -174,28 +179,39 @@ Future runIntegrationTests() async {
   PostgresqlDBAdapter postgresqlAdapter = new PostgresqlDBAdapter(
       'postgres://dart_orm_test:dart_orm_test@localhost:5432/dart_orm_test');
   await postgresqlAdapter.connect();
-  ORM.Model.ormAdapter = postgresqlAdapter;
+
+  ORM.addAdapter('postgresql', postgresqlAdapter);
+  ORM.setDefaultAdapter('postgresql');
+
   bool migrationResult = await ORM.Migrator.migrate();
   assert(migrationResult);
 
   MongoDBAdapter mongoAdapter = new MongoDBAdapter(
       'mongodb://dart_orm_test:dart_orm_test@127.0.0.1/dart_orm_test');
   await mongoAdapter.connect();
-  ORM.Model.ormAdapter = mongoAdapter;
+
+  ORM.addAdapter('mongodb', mongoAdapter);
+  ORM.setDefaultAdapter('mongodb');
+
   migrationResult = await ORM.Migrator.migrate();
   assert(migrationResult);
 
   MySQLDBAdapter mysqlAdapter = new MySQLDBAdapter(
       'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test');
   await mysqlAdapter.connect();
-  ORM.Model.ormAdapter = mysqlAdapter;
+
+  ORM.addAdapter('mysql', mysqlAdapter);
+  ORM.setDefaultAdapter('mysql');
+
   migrationResult = await ORM.Migrator.migrate();
   assert(migrationResult);
 
   group('Integration tests:', () {
     group('PostgreSQL ->', () {
       setUp(() {
-        ORM.Model.ormAdapter = postgresqlAdapter;
+        // Set default adapter before running tests so all operations
+        // will be made on postres adapter
+        ORM.setDefaultAdapter('postgresql');
       });
 
       allTests();
@@ -203,7 +219,9 @@ Future runIntegrationTests() async {
 
     group('MySQL ->', () {
       setUp(() {
-        ORM.Model.ormAdapter = mysqlAdapter;
+        // Set default adapter before running tests so all operations
+        // will be made on mysql adapter
+        ORM.setDefaultAdapter('mysql');
       });
 
       allTests();
@@ -211,7 +229,9 @@ Future runIntegrationTests() async {
 
     group('MongoDB ->', () {
       setUp(() {
-        ORM.Model.ormAdapter = mongoAdapter;
+        // Set default adapter before running tests so all operations
+        // will be made on mongo adapter
+        ORM.setDefaultAdapter('mongodb');
       });
 
       allTests();
