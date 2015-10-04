@@ -1,10 +1,11 @@
-import 'dart:io';
-import 'package:unittest/unittest.dart';
+library dart_orm.test;
 
-import 'integration/integration_tests.dart';
+import 'dart:io';
 
 import 'package:logging/logging.dart';
+import 'package:test/test.dart';
 
+import 'integration/integration_tests.dart';
 import 'test_util.dart';
 
 void setupDBs(psql_user, psql_db, mysql_user) {
@@ -100,49 +101,44 @@ void setupDBs(psql_user, psql_db, mysql_user) {
   ]);
 }
 
-void main(List<String> arguments) {
-  String PSQL_USER = '';
-  String PSQL_DB = '';
-  String MYSQL_USER = '';
+void main() {
+  var configured = false;
 
-  try {
-    for (String varName in Platform.environment.keys) {
-      if (varName == 'PSQL_USER') {
-        PSQL_USER = Platform.environment[varName];
-      }
-      if (varName == 'PSQL_DB') {
-        PSQL_DB = Platform.environment[varName];
-      }
-      if (varName == 'MYSQL_USER') {
-        MYSQL_USER = Platform.environment[varName];
-      }
-    }
-  } catch (e) {
-    log.shout(e);
-  }
+  setUp(() {
+    if (configured) return;
 
-  Logger.root.level = Level.FINEST;
-  Logger.root.onRecord.listen((LogRecord rec) {
-    if (rec.loggerName.contains('DartORM')) {
-      print(
-          '[${rec.loggerName}] ${rec.level.name}: ${rec.time}: ${rec.message}');
+    String PSQL_USER = '';
+    String PSQL_DB = '';
+    String MYSQL_USER = '';
+
+    try {
+      for (String varName in Platform.environment.keys) {
+        if (varName == 'PSQL_USER') {
+          PSQL_USER = Platform.environment[varName];
+        }
+        if (varName == 'PSQL_DB') {
+          PSQL_DB = Platform.environment[varName];
+        }
+        if (varName == 'MYSQL_USER') {
+          MYSQL_USER = Platform.environment[varName];
+        }
+      }
+    } catch (e) {
+      log.shout(e);
     }
+
+    Logger.root.level = Level.FINEST;
+    Logger.root.onRecord.listen((LogRecord rec) {
+      if (rec.loggerName.contains('DartORM')) {
+        print(
+            '[${rec.loggerName}] ${rec.level.name}: ${rec.time}: ${rec.message}');
+      }
+    });
+
+    setupDBs(PSQL_USER, PSQL_DB, MYSQL_USER);
+
+    configured = true;
   });
 
-  setupDBs(PSQL_USER, PSQL_DB, MYSQL_USER);
-
-  unittestConfiguration = new ShutdownConf();
-
   runIntegrationTests();
-}
-
-class ShutdownConf extends SimpleConfiguration {
-  void onDone(bool success) {
-    super.onDone(success);
-    if (success) {
-      exit(0);
-    } else {
-      exit(1);
-    }
-  }
 }

@@ -1,7 +1,7 @@
 library dart_orm.integration_tests;
 
 import 'package:dart_orm/dart_orm.dart';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 import 'test_definitions.dart';
 

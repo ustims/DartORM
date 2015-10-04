@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 import 'package:dart_orm/dart_orm.dart' as ORM;
 

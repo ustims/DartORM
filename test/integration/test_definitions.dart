@@ -1,9 +1,9 @@
 library dart_orm.test_definitions;
 
 import 'dart:async';
-import 'package:unittest/unittest.dart';
 
 import 'package:dart_orm/dart_orm.dart' as ORM;
+import 'package:test/test.dart';
 
 import 'separate_annotations.dart';
 
