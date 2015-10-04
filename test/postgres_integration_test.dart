@@ -2,11 +2,12 @@ library dart_orm.test;
 
 import 'dart:io';
 
+import 'package:dart_orm_adapter_postgresql/dart_orm_adapter_postgresql.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
-import 'integration/integration_tests.dart';
 import 'test_util.dart';
+import 'integration/integration_util.dart';
 
 void setupDBs(psql_user, psql_db) {
   if (psql_user.length < 1 || psql_db.length < 1) {
@@ -20,16 +21,6 @@ void setupDBs(psql_user, psql_db) {
   // psql teardown
   run('psql', ['-c', 'DROP DATABASE $dbName;', '-U', psql_user, psql_db]);
   run('psql', ['-c', 'DROP ROLE $dbUserName;', '-U', psql_user, psql_db]);
-
-  // mongodb teardown
-  run('mongo', [
-    '$dbName',
-    '--eval',
-    """
-  db.runCommand( { dropAllUsersFromDatabase: 1, writeConcern: { w: "majority" } } );
-  db.dropDatabase();
-  """
-  ]);
 
   // psql setup
   log.info('---- PSQL Setup -----');
@@ -47,32 +38,6 @@ void setupDBs(psql_user, psql_db) {
     '-U',
     psql_user,
     psql_db
-  ]);
-
-  log.info('---- MongoDB Setup -----');
-  // mongodb setup
-  run('mongo', [
-    '$dbName',
-    '--eval',
-    """
-  if (db.version().toString().indexOf('2.4') > -1) {
-      db.addUser(
-          {
-              user: "$dbUserName",
-              pwd: "$dbUserName",
-              roles: ["readWrite"]
-          }
-      );
-  } else {
-      db.createUser(
-          {
-              user: "$dbUserName",
-              pwd: "$dbUserName",
-              roles: [{role: "userAdmin", db: "$dbName"}]
-          }
-      );
-  }
-  """
   ]);
 }
 
@@ -111,5 +76,8 @@ void main() {
     configured = true;
   });
 
-  runIntegrationTests();
+  PostgresqlDBAdapter postgresqlAdapter = new PostgresqlDBAdapter(
+      'postgres://dart_orm_test:dart_orm_test@localhost:5432/dart_orm_test');
+
+  registerTestsForAdapter('postgresql', postgresqlAdapter);
 }
