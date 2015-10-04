@@ -14,29 +14,20 @@ const String dbUserName = 'dart_orm_test';
 const String dbName = 'dart_orm_test';
 
 void setupMySql(mysqlUser) {
+  void runMySql(String command) {
+    run('mysql', ['-e', command, '-v', '-u', mysqlUser]);
+  }
+
   log.info('---- MySQL Teardown -----');
-  run('mysql', ['-e', 'DROP DATABASE $dbName;', '-u', mysqlUser]);
-  run('mysql',
-      ['-e', 'DROP USER \'$dbUserName\'@\'localhost\';', '-u', mysqlUser]);
-  run('mysql', ['-e', 'FLUSH PRIVILEGES;', '-u', mysqlUser]);
+  runMySql('DROP DATABASE $dbName;');
+  runMySql('DROP USER \'$dbUserName\'@\'localhost\';');
 
   log.info('---- MySQL Setup -----');
-  run('mysql', ['-e', 'CREATE DATABASE $dbName;', '-v', '-u', 'root']);
-  run('mysql', [
-    '-e',
-    'CREATE USER \'$dbUserName\'@\'localhost\' IDENTIFIED BY \'$dbUserName\';',
-    '-v',
-    '-u',
-    mysqlUser
-  ]);
-  run('mysql', [
-    '-e',
-    'GRANT ALL ON $dbName.* TO \'$dbUserName\'@\'localhost\';',
-    '-v',
-    '-u',
-    mysqlUser
-  ]);
-  run('mysql', ['-e', 'FLUSH PRIVILEGES;', '-v', '-u', 'root']);
+  runMySql('CREATE DATABASE $dbName;');
+  runMySql(
+      'CREATE USER \'$dbUserName\'@\'localhost\' IDENTIFIED BY \'$dbUserName\';');
+  runMySql('GRANT ALL ON $dbName.* TO \'$dbUserName\'@\'localhost\';');
+  runMySql('FLUSH PRIVILEGES;');
 }
 
 void main() {
