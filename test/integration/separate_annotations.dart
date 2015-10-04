@@ -35,8 +35,7 @@ Future testSeparateAnnotations() async {
   commentId = await ORM.insert(comment);
   expect(commentId, 2);
 
-  ORM.FindOne f = new ORM.FindOne(Comment)
-    ..whereEquals('id', 1);
+  ORM.FindOne f = new ORM.FindOne(Comment)..whereEquals('id', 1);
 
   Comment commentFromDb = await f.execute();
   expect(commentFromDb.text, 'Comment text');
