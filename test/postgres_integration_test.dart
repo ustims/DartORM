@@ -7,7 +7,7 @@ import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import 'test_util.dart';
-import 'integration/integration_util.dart';
+import 'integration/test_integration.dart';
 
 void setupDBs(psql_user, psql_db) {
   if (psql_user.length < 1 || psql_db.length < 1) {

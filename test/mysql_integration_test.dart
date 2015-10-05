@@ -2,13 +2,12 @@ library dart_orm.mysql_integration_test;
 
 import 'dart:io';
 
+import 'package:dart_orm_adapter_mysql/dart_orm_adapter_mysql.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
-import 'package:dart_orm_adapter_mysql/dart_orm_adapter_mysql.dart';
-
-import 'integration/integration_util.dart';
 import 'test_util.dart';
+import 'integration/test_integration.dart';
 
 const String dbUserName = 'dart_orm_test';
 const String dbName = 'dart_orm_test';

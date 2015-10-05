@@ -1,11 +1,9 @@
-library dart_orm.test_definitions;
+library dart_orm.test_basic_integration;
 
 import 'dart:async';
 
 import 'package:dart_orm/dart_orm.dart' as ORM;
 import 'package:test/test.dart';
-
-import 'separate_annotations.dart';
 
 @ORM.DBTable('users')
 class User extends ORM.Model {
@@ -147,7 +145,7 @@ Future dateTimeTestCase() async {
   expect(foundBiggerThan.length, 1);
 }
 
-allTests() {
+registerBasicIntegrationTests() {
   test('PrimaryKey', primaryKeyTestCase);
 
   test('FindOne', findOneTestCase);
@@ -157,6 +155,4 @@ allTests() {
   test('Save', saveTestCase);
 
   test('DateTime', dateTimeTestCase);
-
-  test('SeparateAnnotations', testSeparateAnnotations);
 }
