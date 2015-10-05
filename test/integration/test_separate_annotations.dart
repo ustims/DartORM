@@ -1,3 +1,5 @@
+library dart_orm.test_seperate_annotations;
+
 import 'dart:async';
 import 'package:test/test.dart';
 

@@ -1,9 +1,10 @@
-library dart_orm.integration_tests;
+library dart_orm.test_integration;
 
 import 'package:dart_orm/dart_orm.dart';
 import 'package:test/test.dart';
 
-import 'test_definitions.dart';
+import 'test_basic_integration.dart';
+import 'test_separate_annotations.dart';
 
 bool _parserInitialized = false;
 
@@ -35,6 +36,8 @@ void registerTestsForAdapter(String name, DBAdapter adapter) {
       }
     });
 
-    allTests();
+    registerBasicIntegrationTests();
+
+    test('SeparateAnnotations', testSeparateAnnotations);
   });
 }
