@@ -7,5 +7,7 @@ homepage: https://github.com/ustims/DartORM
 dev_dependencies:
   test: '^0.12.0'
   dart_orm_adapter_postgresql: any
-  dart_orm_adapter_mongodb: any
+  # Testing getting the latest dependencies
+  dart_orm_adapter_mongodb:
+    git: https://github.com/kevmoo/DartORM-MongoDB
   dart_orm_adapter_mysql: any
