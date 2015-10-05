@@ -2,7 +2,7 @@ language: dart
 dart:
   - stable
   - dev
-script: dart test/test.dart
+script: pub run test
 before_script:
   - psql -c 'create database dart_orm;' -U postgres
 services:

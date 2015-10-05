@@ -1,5 +1,7 @@
+library dart_orm.test_seperate_annotations;
+
 import 'dart:async';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 import 'package:dart_orm/dart_orm.dart' as ORM;
 
@@ -35,8 +37,7 @@ Future testSeparateAnnotations() async {
   commentId = await ORM.insert(comment);
   expect(commentId, 2);
 
-  ORM.FindOne f = new ORM.FindOne(Comment)
-    ..whereEquals('id', 1);
+  ORM.FindOne f = new ORM.FindOne(Comment)..whereEquals('id', 1);
 
   Comment commentFromDb = await f.execute();
   expect(commentFromDb.text, 'Comment text');
