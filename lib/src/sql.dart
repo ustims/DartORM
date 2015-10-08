@@ -142,6 +142,16 @@ class SQLAdapter {
    *  OFFSET {{selectSql.offset}}'
    */
   String constructSelectSql(Select select) {
+    if (select == null) {
+      throw new Exception(
+          'Could not construct SELECT statement from null [Select] object.');
+    }
+
+    if (select.table == null) {
+      throw new Exception(
+          'Could not construct SELECT statement because Select.table is null.');
+    }
+
     String sql = 'SELECT ';
     sql += select.columnsToSelect.join(', \n       ');
     sql += ' \nFROM ' + select.table.tableName;
