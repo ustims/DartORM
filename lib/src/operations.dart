@@ -236,6 +236,30 @@ class Field {
 
   dynamic defaultValue;
   Symbol constructedFromPropertyName;
+
+  Field() {}
+
+  Field.fromJson(Map fieldJson) {
+    isPrimaryKey = fieldJson["primaryKey"];
+    isUnique = fieldJson["isUnique"];
+    type = fieldJson["type"];
+    fieldName = fieldJson["fieldName"];
+    propertyName = fieldJson["propertyName"];
+    propertyTypeName = fieldJson["propertyTypeName"];
+    defaultValue = fieldJson["defaultValue"];
+  }
+
+  Map toJson() {
+    return {
+      "isPrimaryKey": isPrimaryKey,
+      "isUnique": isUnique,
+      "type": type,
+      "fieldName": fieldName,
+      "propertyName": propertyName,
+      "propertyTypeName": propertyTypeName,
+      "defaultValue": defaultValue
+    };
+  }
 }
 
 class Table {
@@ -266,4 +290,73 @@ class Table {
     }
     return null;
   }
+
+  Table() {}
+
+  Table.fromJson(Map tableJson) {
+    _className = tableJson["_className"];
+    tableName = tableJson["tableName"];
+    fields = new List.from(tableJson["fields"]
+        .map((Map fieldJson) => new Field.fromJson(fieldJson)));
+  }
+
+  Map toJson() {
+    return {
+      "className": _className,
+      "tableName": tableName,
+      "fields": new List.from(fields.map((Field f) => f.toJson()))
+    };
+  }
+}
+
+/// Base alter table class.
+class AlterTable {
+  Table table;
+
+  AlterTable(this.table);
+}
+
+/// Represents add new table database operation.
+/// Instances of this class are created by [Migrator] when it detects
+/// that new table should be added to database.
+class CreateTable extends AlterTable {
+  CreateTable(Table table) : super(table);
+}
+
+/// Represents drop table database opetaion.
+/// Instances of this class are created by [Migrator] when it detects
+/// that a table should be dropped from database.
+class DropTable extends AlterTable {
+  DropTable(Table table) : super(table);
+}
+
+/// Represents create field database operation.
+/// Instances of this class are created by [Migrator] when it detects
+/// that new Field should be added to database.
+class CreateField extends AlterTable {
+  /// Field to create
+  Field field;
+
+  CreateField(Table table, Field this.field) : super(table);
+}
+
+/// Represents drop field database operation.
+/// Instances of this class are created by [Migrator] when it detects
+/// that a Field should be dropped from database.
+class DropField extends AlterTable {
+  /// Field to drop.
+  Field field;
+
+  DropField(Table table, Field this.field) : super(table);
+}
+
+/// Represents alter field database operation.
+/// Instances of this class are created by [Migrator] when it detects
+/// that a Field should be altered on database.
+class AlterField extends AlterTable {
+  Field oldField;
+  Field newField;
+
+  AlterField(Table table, Field this.oldField, Field this.newField)
+      : super(table);
 }

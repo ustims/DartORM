@@ -9,6 +9,7 @@ import 'operations.dart';
  */
 abstract class DBAdapter {
   Future connect();
+  Future close();
 
   /**
    * Must return a list of maps which keys are column names
@@ -39,6 +40,14 @@ abstract class DBAdapter {
    * Must create a table/collection.
    */
   Future createTable(Table table);
+
+  Future dropTable(Table table);
+
+  Future addField(Table table, Field field);
+
+  Future dropField(Table table, Field field);
+
+  Future alterField(Table table, AlterField alterField);
 }
 
 /**
