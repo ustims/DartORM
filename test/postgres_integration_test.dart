@@ -12,7 +12,7 @@ import 'integration/test_integration.dart';
 void setupDBs(psql_user, psql_db) {
   if (psql_user.length < 1 || psql_db.length < 1) {
     throw new Exception(
-        'PSQL_USER, PSQL_DB, MYSQL_USER environment variables should be provided.');
+        'PSQL_USER, PSQL_DB environment variables should be provided.');
   }
 
   String dbUserName = 'dart_orm_test';
@@ -42,11 +42,7 @@ void setupDBs(psql_user, psql_db) {
 }
 
 void main() {
-  var configured = false;
-
-  setUp(() {
-    if (configured) return;
-
+  setUpAll(() {
     String PSQL_USER = '';
     String PSQL_DB = '';
 
@@ -72,12 +68,14 @@ void main() {
     });
 
     setupDBs(PSQL_USER, PSQL_DB);
-
-    configured = true;
   });
 
   PostgresqlDBAdapter postgresqlAdapter = new PostgresqlDBAdapter(
       'postgres://dart_orm_test:dart_orm_test@localhost:5432/dart_orm_test');
 
   registerTestsForAdapter('postgresql', postgresqlAdapter);
+
+  tearDownAll(() {
+    postgresqlAdapter.close();
+  });
 }

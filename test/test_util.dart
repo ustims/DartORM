@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:logging/logging.dart';
 
-final Logger log = new Logger('dart_orm.test');
+final Logger log = new Logger('[DartORM.test_util]');
 
 String run(String executable, List<String> arguments) {
   var result = Process.runSync(executable, arguments);
@@ -12,7 +12,7 @@ String run(String executable, List<String> arguments) {
     log.severe('$executable:' + result.stderr);
   }
   if (result.stdout.length > 0) {
-    log.info(result.stdout);
+    log.finest(result.stdout);
   }
   return result.stdout;
 }

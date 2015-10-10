@@ -49,11 +49,7 @@ void setupDBs() {
 }
 
 void main() {
-  var configured = false;
-
-  setUp(() {
-    if (configured) return;
-
+  setUpAll(() {
     Logger.root.level = Level.FINEST;
     Logger.root.onRecord.listen((LogRecord rec) {
       if (rec.loggerName.contains('DartORM')) {
@@ -63,12 +59,14 @@ void main() {
     });
 
     setupDBs();
-
-    configured = true;
   });
 
   MongoDBAdapter mongoAdapter = new MongoDBAdapter(
       'mongodb://dart_orm_test:dart_orm_test@127.0.0.1/dart_orm_test');
 
   registerTestsForAdapter('mongodb', mongoAdapter);
+
+  tearDownAll(() {
+    mongoAdapter.close();
+  });
 }

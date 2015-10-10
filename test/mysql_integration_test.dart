@@ -30,11 +30,7 @@ void setupMySql(mysqlUser) {
 }
 
 void main() {
-  var configured = false;
-
-  setUp(() {
-    if (configured) return;
-
+  setUpAll(() {
     String MYSQL_USER = Platform.environment['MYSQL_USER'];
 
     if (MYSQL_USER == null || MYSQL_USER.isEmpty) {
@@ -50,12 +46,14 @@ void main() {
     });
 
     setupMySql(MYSQL_USER);
-
-    configured = true;
   });
 
   MySQLDBAdapter mysqlAdapter = new MySQLDBAdapter(
       'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test');
 
   registerTestsForAdapter('mysql', mysqlAdapter);
+
+  tearDownAll(() {
+    mysqlAdapter.close();
+  });
 }

@@ -1,3 +1,9 @@
+0.1.3
+-----
+
+- Upgraded to test '^0.12.5' to make use of setUpAll() and tearDownAll().
+  Now database connections are closed when test ends.
+
 0.1.1
 -----
 
