@@ -145,6 +145,30 @@ Future dateTimeTestCase() async {
   expect(foundBiggerThan.length, 1);
 }
 
+Future deleteTestCase() async {
+  User u = new User()
+    ..givenName = 'DeleteTestUser';
+
+  await u.save();
+
+  ORM.FindOne f = new ORM.FindOne(User)
+    ..whereEquals('givenName', 'DeleteTestUser');
+
+  User foundUser = await f.execute();
+
+  expect(foundUser, isNotNull);
+  expect(foundUser.givenName, 'DeleteTestUser');
+
+  await u.delete();
+
+  ORM.FindOne findDeleted = new ORM.FindOne(User)
+    ..whereEquals('givenName', 'DeleteTestUser');
+
+  User foundDeletedUser = await findDeleted.execute();
+
+  expect(foundDeletedUser, null);
+}
+
 registerBasicIntegrationTests() {
   test('PrimaryKey', primaryKeyTestCase);
 
@@ -155,4 +179,6 @@ registerBasicIntegrationTests() {
   test('Save', saveTestCase);
 
   test('DateTime', dateTimeTestCase);
+
+  test('Delete', deleteTestCase);
 }
