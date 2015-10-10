@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/ustims/DartORM.svg?branch=master)](https://travis-ci.org/ustims/DartORM)
+[![Coverage Status](https://coveralls.io/repos/ustims/DartORM/badge.svg?branch=master&service=github)](https://coveralls.io/github/ustims/DartORM?branch=master)
 
 Dart ORM
 ========
