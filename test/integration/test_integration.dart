@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 
 import 'test_basic_integration.dart';
 import 'test_separate_annotations.dart';
+import 'test_migrations.dart';
 
 bool _parserInitialized = false;
 
