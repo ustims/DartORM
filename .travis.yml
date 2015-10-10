@@ -2,7 +2,13 @@ language: dart
 dart:
   - stable
   - dev
-script: pub run test
+script:
+  - pub global activate dart_coveralls
+  - pub run test/mongodb_integration_test.dart
+  - pub run test/mysql_integration_test.dart
+  - pub run test/postgres_integration_test.dart
+  - dart_coveralls calc test/mysql_integration_test.dart
+  - dart_coveralls report --token=$COVERALLS_TOKEN test/mysql_integration_test.dart
 before_script:
   - psql -c 'create database dart_orm;' -U postgres
 services:
