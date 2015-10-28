@@ -127,7 +127,9 @@ https://github.com/ustims/DartORM-MySQL
 
 https://github.com/ustims/DartORM-MongoDB
 
+DartORM could also be used on client side with indexedDB:
 
+https://github.com/ustims/DartORM-IndexedDB
 
 Roadmap
 =======
