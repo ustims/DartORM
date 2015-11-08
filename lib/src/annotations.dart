@@ -111,8 +111,19 @@ class AnnotationsParser {
    * Returns [Table] definition object for specified [Type]
    */
   static Table getTableForType(Type modelType) {
+    if (ormClasses.length == 0) {
+      throw new Exception('Can\'t find any ORM-enabled classes. ' +
+          'Please check if there is ORM.AnnotationsParser.Initialize() method call.');
+    }
+
     ClassMirror modelMirror = reflectClass(modelType);
     String modelClassName = MirrorSystem.getName(modelMirror.simpleName);
+
+    if (!ormClasses.containsKey(modelClassName)) {
+      throw new Exception(
+          'Can\'t find ORM annotations for class $modelClassName');
+    }
+
     return ormClasses[modelClassName];
   }
 
