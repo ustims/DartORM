@@ -4,40 +4,39 @@ import 'dart:mirrors';
 
 import 'operations.dart';
 
-/**
- * Database table annotation. If some class wants to be orm-enabled,
- * it needs to be annotated with DBTable().
- *
- * This class is only for annotation purposes,
- * and its data is used to construct [DBTableSQL] instances.
- */
+/// Database table annotation. If some class wants to be orm-enabled,
+/// it needs to be annotated with DBTable().
+///
+/// This class is only for annotation purposes,
+/// and its data is used to construct [Table] instances.
 class DBTable {
-  /**
-   * New instance annotation.
-   * By default, database table name
-   * will be class name converted to underscores.
-   * One can override this by providing
-   * String parameter 'tableName' to constructor.
-   */
-  const DBTable([this.name, this.annotationTarget]);
+  /// Database table name
+  /// will be class name converted to underscores by default,
+  /// One can override this by providing
+  /// String parameter [this.name] to constructor.
+  /// Also it's possible to annotate class from another library or file.
+  /// In such case [this.annotationTarget] should be specified to indicate
+  /// which class is being annotated.
+  const DBTable([String this.name, Type this.annotationTarget]);
 
   final String name;
 
   final Type annotationTarget;
 }
 
-/**
- * Database field annotation.
- *
- * Every property of class that needs to be stored to database
- * should be annotated with @DBField
- */
+/// Database field annotation.
+/// Every property of class that needs to be stored to database
+/// should be annotated with @DBField()
 class DBField {
+  /// Database field. TO override database field name, provide [this.name]
+  /// parameter.
   const DBField([this.name]);
 
   final String name;
 }
 
+/// Use this annotation to indicate that some field should be used as
+/// primary key
 class DBFieldPrimaryKey {
   const DBFieldPrimaryKey();
 }
@@ -48,15 +47,19 @@ class DBFieldType {
   final String type;
 }
 
+/// Use this annotation to set default value for some field in database.
 class DBFieldDefault {
   const DBFieldDefault(this.defaultValue);
 
   final String defaultValue;
 }
 
+/// This class is responsive for scanning ORM.* annotations and creating
+/// Table instances for that classes.
 class AnnotationsParser {
   static final Map<String, Table> ormClasses = new Map<String, Table>();
 
+  /// Starts the scan.
   static void initialize() {
     List<ClassMirror> classMirrorsWithMetadata = getAllClassesWithMetadata();
 
@@ -81,15 +84,27 @@ class AnnotationsParser {
                 reflectClass(dbTableAnnotation.annotationTarget);
             ormClasses[MirrorSystem.getName(target.simpleName)] = table;
           }
+
+          // now let's check if table has reference fields. If so, we need
+          // to create additional tables for connecting those references
+          if (table.hasReferenceFields) {
+            for (Field f in table.fields) {
+              if (f is ListReferenceField) {
+                ListReferenceTable fieldReferenceTable = new ListReferenceTable(table, f);
+
+                f.referenceTable = fieldReferenceTable;
+
+                ormClasses[fieldReferenceTable.tableName] = fieldReferenceTable;
+              }
+            }
+          }
         }
       }
     }
   }
 
-  /**
-   * Iterates through all class declarations in current isolate
-   * and returns a big list of all classes that have any metadata attached to.
-   */
+  /// Iterates through all class declarations in current isolate
+  /// and returns a big list of all classes that have any metadata attached to.
   static List<ClassMirror> getAllClassesWithMetadata() {
     List<ClassMirror> classMirrors = new List<ClassMirror>();
 
@@ -107,23 +122,17 @@ class AnnotationsParser {
     return classMirrors;
   }
 
-  /**
-   * Returns [Table] definition object for specified [Type]
-   */
+  /// Returns [Table] definition object for specified [Type]
   static Table getTableForType(Type modelType) {
     ClassMirror modelMirror = reflectClass(modelType);
     String modelClassName = MirrorSystem.getName(modelMirror.simpleName);
     return ormClasses[modelClassName];
   }
 
-  /**
-   * Returns [Table] definition object for specified class name.
-   */
+  /// Returns [Table] definition object for specified class name.
   static Table getTableForClassName(String className) => ormClasses[className];
 
-  /**
-   * Returns [Table] definition object for specified model class instance.
-   */
+  /// Returns [Table] definition object for specified model class instance.
   static Table getTableForInstance(dynamic instance) {
     InstanceMirror mirror = reflect(instance);
     String instanceClassName = MirrorSystem.getName(mirror.type.simpleName);
@@ -146,7 +155,18 @@ class AnnotationsParser {
 
   static Field constructField(
       InstanceMirror annotation, VariableMirror fieldMirror) {
-    Field field = new Field();
+    String fieldDartTypeName = getTypeName(fieldMirror.type);
+
+    Field field = null;
+
+    /// Lists (or arrays) are implemented by creating separate table for
+    /// all list values with reference to original record by primary key.
+    if (fieldDartTypeName == 'List') {
+      field = new ListReferenceField();
+      (field as ListReferenceField).generic = fieldMirror.type.typeArguments[0];
+    } else {
+      field = new Field();
+    }
 
     var propertyMeta = fieldMirror.metadata;
 
@@ -155,14 +175,23 @@ class AnnotationsParser {
 
       if (annotationTypeName == "DBFieldPrimaryKey") {
         field.isPrimaryKey = true;
+
+        if (field is ListReferenceField) {
+          throw new StateError('List fields could not be primary keys.');
+        }
       } else if (annotationTypeName == "DBFieldType") {
         field.type = annotationMirror.reflectee.type;
+
+        if (field is ListReferenceField) {
+          throw new StateError(
+              'Field type could not be overriden for List fields');
+        }
       } else if (annotationTypeName == 'DBFieldDefault') {
         field.defaultValue = annotationMirror.reflectee.defaultValue;
       }
     }
 
-    field.propertyTypeName = getTypeName(fieldMirror.type);
+    field.propertyTypeName = fieldDartTypeName;
 
     if (field.fieldName == null) {
       field.fieldName = getTypeName(fieldMirror);

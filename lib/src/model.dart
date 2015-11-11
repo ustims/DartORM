@@ -136,16 +136,58 @@ class FindBase extends Select {
     List<dynamic> foundInstances = new List<dynamic>();
 
     var rows = await orm.getDefaultAdapter().select(selectSql);
+
+    List resulRowsPromaryKeys = [];
+    bool hasReferenceFields = modelTable.hasReferenceFields;
+
     for (Map<String, dynamic> row in rows) {
       InstanceMirror newInstance =
           modelMirror.newInstance(new Symbol(''), [], new Map());
 
       for (Field field in modelTable.fields) {
         var fieldValue = row[field.fieldName];
+
+        if(field is ListReferenceField) {
+          fieldValue = []; // just create new list. It will be populated later.
+        }
+
+        if(field.isPrimaryKey) {
+          resulRowsPromaryKeys.add(fieldValue);
+        }
+
         newInstance.setField(field.constructedFromPropertyName, fieldValue);
       }
 
       foundInstances.add(newInstance.reflectee);
+    }
+
+    if(hasReferenceFields) {
+      for(Field field in modelTable.fields) {
+        if(field is ListReferenceField) {
+          ListReferenceField listField = field;
+          ListReferenceTable listTable = field.referenceTable;
+
+          Select referenceSelect = new Select(['*']);
+          referenceSelect.table = listField.referenceTable;
+          referenceSelect.where(new In(listTable.primaryKeyReferenceField.fieldName, resulRowsPromaryKeys));
+          var results = await orm.getDefaultAdapter().select(referenceSelect);
+
+          // now we have all values from reference table for all results from original select.
+          // let's go through reference results and populate original results
+          for (Map<String, dynamic> row in results) {
+            var modelId = row[listTable.primaryKeyReferenceField.fieldName];
+            var value = row[listTable.valueField.fieldName];
+
+            for(var foundInstance in foundInstances) {
+              var foundInstanceId = AnnotationsParser.getPropertyValueForField(selectSql.table.getPrimaryKeyField(), foundInstance);
+              if(foundInstanceId == modelId) {
+                var list = AnnotationsParser.getPropertyValueForField(field, foundInstance);
+                list.add(value);
+              }
+            }
+          }
+        }
+      }
     }
 
     return foundInstances;

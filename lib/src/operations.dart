@@ -1,6 +1,7 @@
 library dart_orm.operations;
 
 import 'dart:collection';
+import 'dart:mirrors';
 
 class ConditionLogic {
   static const String AND = 'AND';
@@ -207,35 +208,40 @@ class Insert {
   }
 }
 
-/**
- * Represents database field.
- */
+/// Represents database field.
 class Field {
   bool isPrimaryKey = false;
   bool isUnique = false;
 
-  /**
-   * Raw database type string. For example: TIMESTAMP
-   */
+  /// Raw database type string. For example: TIMESTAMP
   String type;
 
-  /**
-   * Database column name.
-   */
+  /// Database column name.
   String fieldName;
 
-  /**
-   * Model property name.
-   */
+  /// Model property name.
   String propertyName;
 
-  /**
-   * Name of the Dart type this field is attached to.
-   */
+  /// Name of the Dart type this field is attached to.
   String propertyTypeName;
 
   dynamic defaultValue;
   Symbol constructedFromPropertyName;
+}
+
+class ListReferenceField extends Field {
+  /// If this field is an array(List), than here should be stored a
+  /// type of values for an array.
+  ClassMirror generic;
+
+  String get genericName =>
+      MirrorSystem.getName(this.generic.simpleName);
+
+  Table referenceTable;
+
+  /// Name of the field in [referenceTable] which points to original table
+  /// primary key.
+  String primaryKeyReferenceFieldName;
 }
 
 class Table {
@@ -265,5 +271,52 @@ class Table {
       }
     }
     return null;
+  }
+
+  /// Returns true is this table contains references to another tables.
+  /// References are used for list fields and for fields that referencing
+  /// objects from other tables.
+  bool get hasReferenceFields {
+    // TODO: now only lists are supported. When direct references will
+    // be implemented here should be another check.
+    return this.fields.any((Field f) => f is ListReferenceField);
+  }
+
+  String toString() {
+    return 'Instance \'Table\', name: ${this.tableName}';
+  }
+}
+
+/// This table stores values for tables with List fields.
+/// Contains only two fields: one points to original [Table] id.
+/// Second stores value.
+class ListReferenceTable extends Table {
+  /// [originalTable] - table which contains original data.
+  /// [field] - ListReferenceField form originalTable for which this instance is created.
+  ListReferenceTable(Table originalTable, ListReferenceField field) {
+    this.tableName = originalTable.tableName +
+        '_' +
+        originalTable.getPrimaryKeyField().fieldName +
+        '__' +
+        field.fieldName;
+
+    this.primaryKeyReferenceField = new Field()
+      ..fieldName = originalTable.tableName + '_id'
+      ..propertyTypeName = 'int';
+
+    this.fields.add(this.primaryKeyReferenceField);
+
+    this.valueField = new Field()
+      ..fieldName = field.fieldName
+      ..propertyTypeName = field.genericName;
+
+    this.fields.add(this.valueField);
+  }
+
+  Field primaryKeyReferenceField;
+  Field valueField;
+
+  String toString() {
+    return 'Instance \'ListReferenceTable\', name: ${this.tableName}';
   }
 }

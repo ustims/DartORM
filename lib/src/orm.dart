@@ -98,7 +98,7 @@ Future insert(dynamic model, [DBAdapter adapter = null]) async {
   Insert insert = new Insert(table);
 
   for (Field field in table.fields) {
-    if (!field.isPrimaryKey) {
+    if (!field.isPrimaryKey && !(field is ListReferenceField)) {
       insert.value(field.fieldName,
           AnnotationsParser.getPropertyValueForField(field, model));
     }
@@ -111,6 +111,25 @@ Future insert(dynamic model, [DBAdapter adapter = null]) async {
   var newRecordId = await adapter.insert(insert);
   if (table.getPrimaryKeyField() != null) {
     setPrimaryKeyValue(model, newRecordId);
+  }
+
+  if (insert.table.hasReferenceFields) {
+    for (Field f in insert.table.fields) {
+      if (f is ListReferenceField) {
+        ListReferenceTable referenceTable = f.referenceTable;
+
+        List listToInsert =
+            AnnotationsParser.getPropertyValueForField(f, model);
+        for (var value in listToInsert) {
+          Insert referenceInsert = new Insert(referenceTable)
+            ..value(
+                referenceTable.primaryKeyReferenceField.fieldName, newRecordId)
+            ..value(referenceTable.valueField.fieldName, value);
+
+          await adapter.insert(referenceInsert);
+        }
+      }
+    }
   }
 
   return newRecordId;
@@ -134,7 +153,7 @@ Future update(dynamic model, [DBAdapter adapter = null]) async {
     var value = AnnotationsParser.getPropertyValueForField(field, model);
     if (field.isPrimaryKey) {
       update.where(new Equals(field.fieldName, value));
-    } else {
+    } else if (!(field is ListReferenceField)) {
       update.set(field.fieldName, value);
     }
   }
@@ -144,6 +163,33 @@ Future update(dynamic model, [DBAdapter adapter = null]) async {
   }
 
   var updateResult = await adapter.update(update);
+
+  if (update.table.hasReferenceFields) {
+    for (Field f in update.table.fields) {
+      if (f is ListReferenceField) {
+        ListReferenceTable referenceTable = f.referenceTable;
+
+        List listToInsert =
+            AnnotationsParser.getPropertyValueForField(f, model);
+
+        Delete delete = new Delete(referenceTable)
+          ..where(new Equals(referenceTable.primaryKeyReferenceField.fieldName,
+              primaryKeyValue));
+
+        await adapter.delete(delete);
+
+        for (var value in listToInsert) {
+          Insert referenceInsert = new Insert(referenceTable)
+            ..value(referenceTable.primaryKeyReferenceField.fieldName,
+                primaryKeyValue)
+            ..value(referenceTable.valueField.fieldName, value);
+
+          await adapter.insert(referenceInsert);
+        }
+      }
+    }
+  }
+
   return updateResult;
 }
 
