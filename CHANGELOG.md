@@ -1,3 +1,8 @@
+0.2.0
+-----
+
+- Added support for List model properties.
+
 0.1.3
 -----
 

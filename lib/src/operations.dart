@@ -234,8 +234,7 @@ class ListReferenceField extends Field {
   /// type of values for an array.
   ClassMirror generic;
 
-  String get genericName =>
-      MirrorSystem.getName(this.generic.simpleName);
+  String get genericName => MirrorSystem.getName(this.generic.simpleName);
 
   Table referenceTable;
 

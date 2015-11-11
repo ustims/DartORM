@@ -28,7 +28,7 @@ class SQLAdapter {
         try {
           row[f.fieldName] = rawRow[fieldNumber];
           fieldNumber++;
-        } on RangeError catch(e) {
+        } on RangeError catch (e) {
           break;
         }
       }

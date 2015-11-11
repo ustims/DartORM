@@ -7,16 +7,18 @@ Dart ORM
 Easy-to-use and easy-to-setup database ORM for dart.
 
 It is in the very beginning stage of development and not ready for production use.
+
+Any feedback is greatly appreciated.
+
 Feel free to contribute!
 
-Feature tour
-============
-
-If you want to jump to example code click here:
-https://github.com/ustims/DartORM/blob/master/example/example.dart
+Features
+========
 
 Annotations
 -----------
+
+Annotations could be used in-place:
 
 ```dart
 import 'package:dart_orm/orm.dart' as ORM;
@@ -37,19 +39,53 @@ class User extends ORM.Model {
 }
 ```
 
-With such annotated class when you first run ORM.Migrator.migrate()
+Or one can provide a target class for DBTable annotation. 
+In such way one can store third-party classes in database without changing the original class definition.
 
-it will execute such statement:
+```dart
 
-```sql
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    given_name text,
-    family_name text
-);
+// somelibrary.dart
+class User {
+  int id;
+  String name;
+}
+
+// your code
+import 'somelibrary.dart' as lib;
+
+@ORM.Table('users', lib.User)
+class DBUser {
+  @ORM.DBField()
+  int id;
+  
+  @ORM.DBField()
+  String name;
+}
+
+// now User instances could be used like this:
+lib.User u = new lib.User();
+u.name = 'Name';
+await ORM.insert(u);
+
+// Note that DBUser is used only for annotation purposes and should not be used directly.
 ```
 
-Migrations, schema versions and diffs will be implemented later.
+Types support
+-------------
+
+Any simple Dart type could be used: int/double/String/bool/DateTime.
+
+Lists are supported and could be used as any other type just by annotating a property:
+
+```dart
+@ORM.DBTable('users')
+class User {
+  @ORM.DBField()
+  List<String> emails;
+}
+```
+
+References to other tables are not supported, but are in progress. Stay tuned!
 
 Inserts and updates
 -------------------
@@ -81,12 +117,12 @@ VALUES (
 );
 ```
 
-Finding records
----------------
+Queries
+-------
 
 ORM has two classes for finding records: Find and FindOne.
 
-Constructors receives a class that extend ORM.Model.
+Constructors receive a class that extend ORM.Model.
 
 ```dart
 
@@ -119,13 +155,36 @@ ORDER BY id DESC LIMIT 10
 Multiple database adapters support
 ----------------------------------
 
-Currenty there are three adapters in work-in-progress status:
+Server-side adapters:
 
 https://github.com/ustims/DartORM-PostgreSQL
 
 https://github.com/ustims/DartORM-MySQL
 
 https://github.com/ustims/DartORM-MongoDB
+
+To use an adapter install it with pub and do this:
+
+```dart
+import 'package:dart_orm_adapter_postgresql/dart_orm_adapter_postgresql.dart';
+import 'package:dart_orm/dart_orm.dart' as orm;
+
+main() {
+  orm.AnnotationsParser.initialize();
+
+  String connectionString =
+      'postgres://<username>:<password>@localhost:5432/<dbname>';
+      
+  orm.DBAdapter postgresAdapter = new PostgresqlDBAdapter(connectionString);
+  await postgresAdapter.connect();
+  
+  orm.addAdapter('postgres', postgresAdapter);
+  orm.setDefaultAdapter('postgres');
+  
+  await orm.Migrator.migrate();
+}
+```      
+
 
 DartORM could also be used on client side with indexedDB:
 
@@ -135,6 +194,4 @@ Roadmap
 =======
 
 - model relations (in progress)
-- multiple adapters support(should be possible to store models on different adapters)
 - migration system
-- memory & file adapters

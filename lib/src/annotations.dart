@@ -90,7 +90,8 @@ class AnnotationsParser {
           if (table.hasReferenceFields) {
             for (Field f in table.fields) {
               if (f is ListReferenceField) {
-                ListReferenceTable fieldReferenceTable = new ListReferenceTable(table, f);
+                ListReferenceTable fieldReferenceTable =
+                    new ListReferenceTable(table, f);
 
                 f.referenceTable = fieldReferenceTable;
 

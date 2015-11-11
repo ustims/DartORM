@@ -147,11 +147,11 @@ class FindBase extends Select {
       for (Field field in modelTable.fields) {
         var fieldValue = row[field.fieldName];
 
-        if(field is ListReferenceField) {
+        if (field is ListReferenceField) {
           fieldValue = []; // just create new list. It will be populated later.
         }
 
-        if(field.isPrimaryKey) {
+        if (field.isPrimaryKey) {
           resulRowsPromaryKeys.add(fieldValue);
         }
 
@@ -161,15 +161,17 @@ class FindBase extends Select {
       foundInstances.add(newInstance.reflectee);
     }
 
-    if(hasReferenceFields) {
-      for(Field field in modelTable.fields) {
-        if(field is ListReferenceField) {
+    if (hasReferenceFields) {
+      for (Field field in modelTable.fields) {
+        if (field is ListReferenceField) {
           ListReferenceField listField = field;
           ListReferenceTable listTable = field.referenceTable;
 
           Select referenceSelect = new Select(['*']);
           referenceSelect.table = listField.referenceTable;
-          referenceSelect.where(new In(listTable.primaryKeyReferenceField.fieldName, resulRowsPromaryKeys));
+          referenceSelect.where(new In(
+              listTable.primaryKeyReferenceField.fieldName,
+              resulRowsPromaryKeys));
           var results = await orm.getDefaultAdapter().select(referenceSelect);
 
           // now we have all values from reference table for all results from original select.
@@ -178,10 +180,12 @@ class FindBase extends Select {
             var modelId = row[listTable.primaryKeyReferenceField.fieldName];
             var value = row[listTable.valueField.fieldName];
 
-            for(var foundInstance in foundInstances) {
-              var foundInstanceId = AnnotationsParser.getPropertyValueForField(selectSql.table.getPrimaryKeyField(), foundInstance);
-              if(foundInstanceId == modelId) {
-                var list = AnnotationsParser.getPropertyValueForField(field, foundInstance);
+            for (var foundInstance in foundInstances) {
+              var foundInstanceId = AnnotationsParser.getPropertyValueForField(
+                  selectSql.table.getPrimaryKeyField(), foundInstance);
+              if (foundInstanceId == modelId) {
+                var list = AnnotationsParser.getPropertyValueForField(
+                    field, foundInstance);
                 list.add(value);
               }
             }
