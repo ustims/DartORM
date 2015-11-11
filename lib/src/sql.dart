@@ -9,10 +9,10 @@ import 'sql_types.dart';
 class SQLAdapter {
   dynamic connection;
 
-  /**
-   * Returns list of maps which keys are column names
-   * and values are values from db.
-   */
+  List _referenceTables = [];
+
+  /// Returns list of maps whose keys are column names
+  /// and values are values from db.
   Future<List<Map>> select(Select select) async {
     String sqlQueryString = this.constructSelectSql(select);
 
@@ -25,8 +25,12 @@ class SQLAdapter {
 
       int fieldNumber = 0;
       for (Field f in select.table.fields) {
-        row[f.fieldName] = rawRow[fieldNumber];
-        fieldNumber++;
+        try {
+          row[f.fieldName] = rawRow[fieldNumber];
+          fieldNumber++;
+        } on RangeError catch(e) {
+          break;
+        }
       }
 
       results.add(row);
@@ -210,6 +214,16 @@ class SQLAdapter {
    * INSERT sql statement constructor.
    */
   String constructInsertSql(Insert insert) {
+    if (insert == null) {
+      throw new Exception(
+          'Could not construct INSERT statement from null [Insert] object.');
+    }
+
+    if (insert.table == null) {
+      throw new Exception(
+          'Could not construct INSERT statement because Insert.table is null.');
+    }
+
     List<String> values = new List<String>();
 
     for (var v in insert.fieldsToInsert.values) {
@@ -273,8 +287,10 @@ class SQLAdapter {
     List<String> fieldDefinitions = new List<String>();
 
     for (Field f in table.fields) {
-      String fieldDefinition = '\n    ' + this.constructFieldSql(f);
-      fieldDefinitions.add(fieldDefinition);
+      String fieldDefinition = this.constructFieldSql(f);
+      if (fieldDefinition.length > 0) {
+        fieldDefinitions.add('\n    ' + fieldDefinition);
+      }
     }
 
     sql += fieldDefinitions.join(',');
@@ -316,6 +332,11 @@ class SQLAdapter {
   String constructFieldSql(Field field) {
     String fieldType = '';
 
+    if (field is ListReferenceField) {
+      // arrays are stored in separate tables so we should not store them here
+      return '';
+    }
+
     Field relatedField = this.getRelationField(field);
 
     if (relatedField != null) {
@@ -349,10 +370,8 @@ class SQLAdapter {
     return fieldDefinition;
   }
 
-  /**
-   * This method is invoked when db table(column) is created to determine
-   * what sql type to use.
-   */
+  /// This method is invoked when db table(column) is created to determine
+  /// what sql type to use.
   String getSqlType(Field field) {
     String dbTypeName = '';
     switch (field.propertyTypeName) {
@@ -376,7 +395,7 @@ class SQLAdapter {
   }
 
   /**
-   * Wraps any value instance with approciate TypedSQL class
+   * Wraps any value instance with appropriate TypedSQL class
    * which can be converted to SQL string.
    *
    * Tricky thing is about column names. For example is we receive 'id' string:
