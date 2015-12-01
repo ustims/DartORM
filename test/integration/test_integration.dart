@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 
 import 'test_basic_integration.dart';
 import 'test_separate_annotations.dart';
-import 'test_arrays.dart';
+import 'test_lists.dart';
 
 bool _parserInitialized = false;
 
@@ -38,7 +38,7 @@ void registerTestsForAdapter(String name, DBAdapter adapter) {
     });
 
     registerBasicIntegrationTests();
-    registerArraysIntegrationTests();
+    registerListsIntegrationTests();
     test('SeparateAnnotations', testSeparateAnnotations);
   });
 }

@@ -332,7 +332,7 @@ class SQLAdapter {
   String constructFieldSql(Field field) {
     String fieldType = '';
 
-    if (field is ListReferenceField) {
+    if (field is ListJoinField) {
       // arrays are stored in separate tables so we should not store them here
       return '';
     }

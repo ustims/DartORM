@@ -192,6 +192,10 @@ class Delete {
   void where(Condition cond) {
     condition = cond;
   }
+
+  String toString() {
+    return 'Delete from ${this.table.tableName} where ${this.condition.toString()}';
+  }
 }
 
 class Insert {
@@ -205,6 +209,14 @@ class Insert {
 
   void value(String fieldName, dynamic fieldValue) {
     _fieldsToInsert[fieldName] = fieldValue;
+  }
+
+  String toString() {
+    List fields = [];
+    this._fieldsToInsert.forEach((String fieldName, dynamic fieldValue) {
+      fields.add('"${fieldName}"' + '=>' + fieldValue.toString());
+    });
+    return 'Insert into ${this.table.tableName}. Values: ${fields.join(',')}';
   }
 }
 
@@ -229,20 +241,36 @@ class Field {
   Symbol constructedFromPropertyName;
 }
 
-class ListReferenceField extends Field {
+/// Field that should behave as a list of values.
+/// Such fields are not stored directly in the table.
+///
+/// Instead, a new separate [ListJoinTable] is created
+/// to store only two things: reference to id of the model from original [Table]
+/// and a list element value.
+///
+/// Example: if we have a model `User` with `List<String> emails`
+/// than there will be no `emails` field in `User` [Table].
+/// But there will be other table called `user_id__emails`
+/// which will have two [Field]s: id of the user and an email.
+/// Such table could have multiple rows for one id, emulating list values.
+class ListJoinField extends Field {
   /// If this field is an array(List), than here should be stored a
   /// type of values for an array.
   ClassMirror generic;
 
+  /// Returns Dart type string name of values stored in the list
   String get genericName => MirrorSystem.getName(this.generic.simpleName);
 
-  Table referenceTable;
+  /// Table that stores values of this list.
+  /// Could be either [ListJoinValuesTable] or [ListJoinModelsTable]
+  Table joinTable;
 
-  /// Name of the field in [referenceTable] which points to original table
+  /// Name of the field in [joinTable] which points to original table's
   /// primary key.
-  String primaryKeyReferenceFieldName;
+  String primaryKeyJoinFieldName;
 }
 
+/// Represents database table
 class Table {
   /**
    * Model class name.
@@ -263,6 +291,8 @@ class Table {
     tableName = SQL.camelCaseToUnderscore(className);
   }
 
+  Type modelType;
+
   Field getPrimaryKeyField() {
     for (Field f in fields) {
       if (f.isPrimaryKey) {
@@ -278,7 +308,7 @@ class Table {
   bool get hasReferenceFields {
     // TODO: now only lists are supported. When direct references will
     // be implemented here should be another check.
-    return this.fields.any((Field f) => f is ListReferenceField);
+    return this.fields.any((Field f) => f is ListJoinField);
   }
 
   String toString() {
@@ -286,13 +316,18 @@ class Table {
   }
 }
 
-/// This table stores values for tables with List fields.
-/// Contains only two fields: one points to original [Table] id.
-/// Second stores value.
-class ListReferenceTable extends Table {
-  /// [originalTable] - table which contains original data.
-  /// [field] - ListReferenceField form originalTable for which this instance is created.
-  ListReferenceTable(Table originalTable, ListReferenceField field) {
+/// This table stores values for List fields whose members
+/// are simple Dart types like String/int etc.
+///
+/// Contains only two fields: one points to original [Table] primary key,
+/// second one stores the value.
+class ListJoinValuesTable extends Table {
+  /// [originalTable] - table which contains original model.
+  /// [field] - [ListJoinField] from originalTable for which this instance is created.
+  ListJoinValuesTable(Table originalTable, ListJoinField field) {
+    // For simple lists we need something human-readable like
+    // 'users_id__emails' which will mean that table stores emails for users
+    // and those emails are linked to user id's.
     this.tableName = originalTable.tableName +
         '_' +
         originalTable.getPrimaryKeyField().fieldName +
@@ -318,4 +353,74 @@ class ListReferenceTable extends Table {
   String toString() {
     return 'Instance \'ListReferenceTable\', name: ${this.tableName}';
   }
+}
+
+/// This table stores values for lists whose members are other orm models.
+/// Contains only two fields: one stores primary key of the original [Table],
+/// second one stores primary key of the table whoch rows are list members of [listField].
+class ListJoinModelsTable extends Table {
+  ListJoinModelsTable(
+      Table originalTable, ListJoinField listField, Table listMembersTable) {
+    this.originalTable = originalTable;
+    this.listMembersTable = listMembersTable;
+
+    // For lists pointing to other tables, table name should explicitly say that
+    // this table joins two other tables by ids.
+    //
+    // For example:    users_with_gadgets_id__gadgets_id__wishlist
+    // main table name ^                  ^   ^       ^   ^
+    // main table join by field --------- |   |       |   |
+    // values table name ---------------------|       |   |
+    // values table join by field --------------------|   |
+    // field name, needed because one model               |
+    // could have two similar lists with different names --
+
+    this.tableName = originalTable.tableName +
+        '_' +
+        originalTable.getPrimaryKeyField().fieldName +
+        '__' +
+        listMembersTable.tableName +
+        '_' +
+        listMembersTable.getPrimaryKeyField().fieldName +
+        '__' + listField.fieldName;
+
+    var listMembersTablePrimaryKey = listMembersTable.getPrimaryKeyField();
+
+    if (listMembersTablePrimaryKey == null) {
+      throw new ArgumentError(
+          'If table needs to be referenced from other tables, ' +
+              'it should have primary key. Please add primary key to #' +
+              listMembersTable.tableName +
+              '# model.');
+    }
+
+    this.listHolderPrimaryKeyReference = new Field()
+      ..fieldName = originalTable.tableName +
+          '_' +
+          originalTable.getPrimaryKeyField().fieldName
+      ..propertyTypeName = originalTable.getPrimaryKeyField().propertyTypeName;
+
+    this.fields.add(this.listHolderPrimaryKeyReference);
+
+    this.listMembersPrimaryKeyReference = new Field()
+      ..fieldName = listMembersTable.tableName +
+          '_' +
+          listMembersTable.getPrimaryKeyField().fieldName
+      ..propertyTypeName =
+          listMembersTable.getPrimaryKeyField().propertyTypeName;
+
+    this.fields.add(this.listMembersPrimaryKeyReference);
+  }
+
+  /// [Table] which contains models that have list property
+  Table originalTable;
+
+  /// [Table] where list members are stored
+  Table listMembersTable;
+
+  /// Primary key reference to a model which holds a list
+  Field listHolderPrimaryKeyReference;
+
+  /// Primary key reference to model which is a value for list item
+  Field listMembersPrimaryKeyReference;
 }
