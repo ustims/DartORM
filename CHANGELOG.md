@@ -1,3 +1,8 @@
+0.2.1
+-----
+
+- Added support for ORM models as list members
+
 0.2.0
 -----
 

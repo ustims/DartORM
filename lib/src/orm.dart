@@ -83,6 +83,50 @@ void setPrimaryKeyValue(dynamic model, dynamic value) {
   }
 }
 
+Future _saveListMembers(dynamic listHolderId, List list, ListJoinField field,
+    DBAdapter adapter) async {
+  // table that stores relations between list members and list holder
+  ListJoinModelsTable joinTable = field.joinTable;
+
+  // table that stores actual list members
+  Table listMembersTable = joinTable.listMembersTable;
+
+  // insert or update all list items. This will assign primary keys to all list
+  // items
+  for (var listItem in list) {
+    var primaryKeyValue = AnnotationsParser.getPropertyValueForField(
+        listMembersTable.getPrimaryKeyField(), listItem);
+
+    if (primaryKeyValue != null) {
+      await update(listItem);
+    } else {
+      await insert(listItem);
+    }
+  }
+
+  // delete all reference records from join table
+  Delete d = new Delete(joinTable)
+    ..where(new Equals(
+        joinTable.listHolderPrimaryKeyReference.fieldName, listHolderId));
+  await adapter.delete(d);
+
+  for (var listItem in list) {
+    var listItemId = AnnotationsParser.getPropertyValueForField(
+        listMembersTable.getPrimaryKeyField(), listItem);
+
+    if (listItemId == null) {
+      throw new StateError(
+          'Something went wrong: list item does not have an id.');
+    } else {
+      Insert referenceInsert = new Insert(field.joinTable)
+        ..value(joinTable.listHolderPrimaryKeyReference.fieldName, listHolderId)
+        ..value(joinTable.listMembersPrimaryKeyReference.fieldName, listItemId);
+
+      await adapter.insert(referenceInsert);
+    }
+  }
+}
+
 /// Inserts [model] instance to database.
 /// Primary key should be empty.
 ///
@@ -95,11 +139,13 @@ Future insert(dynamic model, [DBAdapter adapter = null]) async {
   }
 
   Table table = AnnotationsParser.getTableForInstance(model);
-  Insert insert = new Insert(table);
+  Insert _insert = new Insert(table);
 
   for (Field field in table.fields) {
-    if (!field.isPrimaryKey && !(field is ListReferenceField)) {
-      insert.value(field.fieldName,
+    // skip primary keys and
+    // [ListJoinField] since Join fields are stored in separate tables.
+    if (!field.isPrimaryKey && !(field is ListJoinField)) {
+      _insert.value(field.fieldName,
           AnnotationsParser.getPropertyValueForField(field, model));
     }
   }
@@ -108,25 +154,33 @@ Future insert(dynamic model, [DBAdapter adapter = null]) async {
     adapter = getDefaultAdapter();
   }
 
-  var newRecordId = await adapter.insert(insert);
+  var newRecordId = await adapter.insert(_insert);
   if (table.getPrimaryKeyField() != null) {
     setPrimaryKeyValue(model, newRecordId);
   }
 
-  if (insert.table.hasReferenceFields) {
-    for (Field f in insert.table.fields) {
-      if (f is ListReferenceField) {
-        ListReferenceTable referenceTable = f.referenceTable;
+  // If model instance has lists
+  if (_insert.table.hasReferenceFields) {
+    for (Field f in _insert.table.fields) {
+      if (f is ListJoinField) {
+        Table joinTable = f.joinTable;
 
+        // raw list of values
         List listToInsert =
             AnnotationsParser.getPropertyValueForField(f, model);
-        for (var value in listToInsert) {
-          Insert referenceInsert = new Insert(referenceTable)
-            ..value(
-                referenceTable.primaryKeyReferenceField.fieldName, newRecordId)
-            ..value(referenceTable.valueField.fieldName, value);
 
-          await adapter.insert(referenceInsert);
+        if (joinTable is ListJoinValuesTable) {
+          for (var value in listToInsert) {
+            Insert referenceInsert = new Insert(joinTable)
+              ..value(joinTable.primaryKeyReferenceField.fieldName, newRecordId)
+              ..value(joinTable.valueField.fieldName, value);
+
+            await adapter.insert(referenceInsert);
+          }
+        } else if (joinTable is ListJoinModelsTable) {
+          await _saveListMembers(newRecordId, listToInsert, f, adapter);
+        } else {
+          throw new StateError('Unknown joinTable type');
         }
       }
     }
@@ -153,7 +207,7 @@ Future update(dynamic model, [DBAdapter adapter = null]) async {
     var value = AnnotationsParser.getPropertyValueForField(field, model);
     if (field.isPrimaryKey) {
       update.where(new Equals(field.fieldName, value));
-    } else if (!(field is ListReferenceField)) {
+    } else if (!(field is ListJoinField)) {
       update.set(field.fieldName, value);
     }
   }
@@ -166,25 +220,32 @@ Future update(dynamic model, [DBAdapter adapter = null]) async {
 
   if (update.table.hasReferenceFields) {
     for (Field f in update.table.fields) {
-      if (f is ListReferenceField) {
-        ListReferenceTable referenceTable = f.referenceTable;
-
+      if (f is ListJoinField) {
         List listToInsert =
             AnnotationsParser.getPropertyValueForField(f, model);
 
-        Delete delete = new Delete(referenceTable)
-          ..where(new Equals(referenceTable.primaryKeyReferenceField.fieldName,
-              primaryKeyValue));
+        if (f.joinTable is ListJoinValuesTable) {
+          ListJoinValuesTable referenceTable = f.joinTable;
 
-        await adapter.delete(delete);
+          Delete delete = new Delete(referenceTable)
+            ..where(new Equals(
+                referenceTable.primaryKeyReferenceField.fieldName,
+                primaryKeyValue));
 
-        for (var value in listToInsert) {
-          Insert referenceInsert = new Insert(referenceTable)
-            ..value(referenceTable.primaryKeyReferenceField.fieldName,
-                primaryKeyValue)
-            ..value(referenceTable.valueField.fieldName, value);
+          await adapter.delete(delete);
 
-          await adapter.insert(referenceInsert);
+          for (var value in listToInsert) {
+            Insert referenceInsert = new Insert(referenceTable)
+              ..value(referenceTable.primaryKeyReferenceField.fieldName,
+                  primaryKeyValue)
+              ..value(referenceTable.valueField.fieldName, value);
+
+            await adapter.insert(referenceInsert);
+          }
+        } else if (f.joinTable is ListJoinModelsTable) {
+          await _saveListMembers(primaryKeyValue, listToInsert, f, adapter);
+        } else {
+          throw new StateError('Unknown joinTable type');
         }
       }
     }

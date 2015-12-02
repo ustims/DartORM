@@ -89,18 +89,49 @@ class AnnotationsParser {
           // to create additional tables for connecting those references
           if (table.hasReferenceFields) {
             for (Field f in table.fields) {
-              if (f is ListReferenceField) {
-                ListReferenceTable fieldReferenceTable =
-                    new ListReferenceTable(table, f);
-
-                f.referenceTable = fieldReferenceTable;
-
-                ormClasses[fieldReferenceTable.tableName] = fieldReferenceTable;
-              }
+              if (f is ListJoinField) {}
             }
           }
         }
       }
+    }
+
+    // When all types with annotations processed we need to go over all
+    // tables to find references to other tables and set [Table] instance
+    // on such references
+    Map tablesToAdd = {};
+    for (Table t in ormClasses.values) {
+      if (t.hasReferenceFields) {
+        for (Field f in t.fields) {
+          if (f is ListJoinField) {
+            // check if field is a reference to another model table
+            var listGenericModelTable =
+                AnnotationsParser.getTableForType(f.generic.reflectedType);
+
+            // If list members are simple dart types -
+            // construct [ListJoinValuesTable] which will store values
+            // in-place.
+            if (listGenericModelTable == null) {
+              ListJoinValuesTable fieldJoinTable =
+                  new ListJoinValuesTable(t, f);
+              f.joinTable = fieldJoinTable;
+            } else {
+              // If list members are other ORM models -
+              // construct [ListJoinModelsTable] which will
+              // store primary key references between original [Table]
+              // and list members.
+              ListJoinModelsTable fieldJoinTable =
+                  new ListJoinModelsTable(t, f, listGenericModelTable);
+              f.joinTable = fieldJoinTable;
+            }
+
+            tablesToAdd[f.joinTable.tableName] = f.joinTable;
+          }
+        }
+      }
+    }
+    for (String tableName in tablesToAdd.keys) {
+      ormClasses[tableName] = tablesToAdd[tableName];
     }
   }
 
@@ -134,8 +165,7 @@ class AnnotationsParser {
     String modelClassName = MirrorSystem.getName(modelMirror.simpleName);
 
     if (!ormClasses.containsKey(modelClassName)) {
-      throw new Exception(
-          'Can\'t find ORM annotations for class $modelClassName');
+      return null;
     }
 
     return ormClasses[modelClassName];
@@ -174,8 +204,8 @@ class AnnotationsParser {
     /// Lists (or arrays) are implemented by creating separate table for
     /// all list values with reference to original record by primary key.
     if (fieldDartTypeName == 'List') {
-      field = new ListReferenceField();
-      (field as ListReferenceField).generic = fieldMirror.type.typeArguments[0];
+      field = new ListJoinField();
+      (field as ListJoinField).generic = fieldMirror.type.typeArguments[0];
     } else {
       field = new Field();
     }
@@ -188,13 +218,13 @@ class AnnotationsParser {
       if (annotationTypeName == "DBFieldPrimaryKey") {
         field.isPrimaryKey = true;
 
-        if (field is ListReferenceField) {
+        if (field is ListJoinField) {
           throw new StateError('List fields could not be primary keys.');
         }
       } else if (annotationTypeName == "DBFieldType") {
         field.type = annotationMirror.reflectee.type;
 
-        if (field is ListReferenceField) {
+        if (field is ListJoinField) {
           throw new StateError(
               'Field type could not be overriden for List fields');
         }
@@ -219,6 +249,7 @@ class AnnotationsParser {
    * Scans DB* annotations on class fields and constructs DBTableSQL instance
    */
   static Table constructTable(ClassMirror modelClassMirror) => new Table()
+    ..modelType = modelClassMirror.reflectedType
     ..className = _getTableName(modelClassMirror)
     ..fields = _getFields(modelClassMirror);
 

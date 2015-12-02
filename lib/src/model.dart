@@ -104,7 +104,7 @@ class Model {
 }
 
 class FindBase extends Select {
-  final Type _modelType;
+  Type _modelType;
   final Table table;
 
   FindBase(Type modelType)
@@ -131,6 +131,15 @@ class FindBase extends Select {
 
   static Future<List> _executeFind(Type modelType, Select selectSql) async {
     Table modelTable = AnnotationsParser.getTableForType(modelType);
+
+    if (modelTable == null) {
+      ClassMirror modelMirror = reflectClass(modelType);
+      String modelClassName = MirrorSystem.getName(modelMirror.simpleName);
+
+      throw new Exception(
+          'Can\'t find ORM annotations for class $modelClassName');
+    }
+
     ClassMirror modelMirror = reflectClass(modelType);
 
     List<dynamic> foundInstances = new List<dynamic>();
@@ -147,7 +156,7 @@ class FindBase extends Select {
       for (Field field in modelTable.fields) {
         var fieldValue = row[field.fieldName];
 
-        if (field is ListReferenceField) {
+        if (field is ListJoinField) {
           fieldValue = []; // just create new list. It will be populated later.
         }
 
@@ -161,17 +170,36 @@ class FindBase extends Select {
       foundInstances.add(newInstance.reflectee);
     }
 
-    if (hasReferenceFields) {
-      for (Field field in modelTable.fields) {
-        if (field is ListReferenceField) {
-          ListReferenceField listField = field;
-          ListReferenceTable listTable = field.referenceTable;
+    foundInstances = await _populate(foundInstances);
+
+    return foundInstances;
+  }
+
+  static Future _populate(List modelsFound) async {
+    if (modelsFound.length < 1) {
+      return modelsFound;
+    }
+
+    Table modelTable = AnnotationsParser.getTableForInstance(modelsFound[0]);
+    Field modelPrimaryKeyField = modelTable.getPrimaryKeyField();
+
+    List modelsIds =
+        new List.from(modelsFound.map((m) => orm.getPrimaryKeyValue(m)));
+
+    for (Field field in modelTable.fields) {
+      if (field is ListJoinField) {
+        ListJoinField listField = field;
+
+        if (field.joinTable is ListJoinValuesTable) {
+          // When list members are simple types and are stored right inside
+          // join table
+          ListJoinValuesTable listTable = field.joinTable;
 
           Select referenceSelect = new Select(['*']);
-          referenceSelect.table = listField.referenceTable;
-          referenceSelect.where(new In(
-              listTable.primaryKeyReferenceField.fieldName,
-              resulRowsPromaryKeys));
+          referenceSelect.table = listField.joinTable;
+          referenceSelect.where(
+              new In(listTable.primaryKeyReferenceField.fieldName, modelsIds));
+
           var results = await orm.getDefaultAdapter().select(referenceSelect);
 
           // now we have all values from reference table for all results from original select.
@@ -180,9 +208,10 @@ class FindBase extends Select {
             var modelId = row[listTable.primaryKeyReferenceField.fieldName];
             var value = row[listTable.valueField.fieldName];
 
-            for (var foundInstance in foundInstances) {
+            for (var foundInstance in modelsFound) {
               var foundInstanceId = AnnotationsParser.getPropertyValueForField(
-                  selectSql.table.getPrimaryKeyField(), foundInstance);
+                  modelPrimaryKeyField, foundInstance);
+
               if (foundInstanceId == modelId) {
                 var list = AnnotationsParser.getPropertyValueForField(
                     field, foundInstance);
@@ -190,11 +219,73 @@ class FindBase extends Select {
               }
             }
           }
+        } else if (field.joinTable is ListJoinModelsTable) {
+          ListJoinModelsTable listTable = field.joinTable;
+
+          // first - select list members ids from join table
+          Select listMembersIdsSelect = new Select(['*']);
+          listMembersIdsSelect.table = listField.joinTable;
+          listMembersIdsSelect.where(new In(
+              listTable.listHolderPrimaryKeyReference.fieldName, modelsIds));
+
+          // raw list of list members ids. Each item in this list will have a
+          // map with list holder id and list member id.
+          List rawListMembersIds =
+          await orm.getDefaultAdapter().select(listMembersIdsSelect);
+
+          // Just gather all list members ids in a simple list
+          List allListMemberIds = [];
+
+          // Make a map which keys are model ids and values are lists with found
+          // list members
+          Map<dynamic, List> listMembersIdByModelId = {};
+
+          rawListMembersIds.forEach((m) {
+            allListMemberIds
+                .add(m[listTable.listMembersPrimaryKeyReference.fieldName]);
+
+            var modelId = m[listTable.listHolderPrimaryKeyReference.fieldName];
+
+            if (!listMembersIdByModelId.containsKey(modelId)) {
+              listMembersIdByModelId[modelId] = [];
+            }
+
+            listMembersIdByModelId[modelId]
+                .add(m[listTable.listMembersPrimaryKeyReference.fieldName]);
+          });
+
+          if (allListMemberIds.length > 0) {
+            // find all list members for all found models
+            Find findMembers = new Find(listTable.listMembersTable.modelType);
+            findMembers.where(new In(
+                listTable.listMembersTable
+                    .getPrimaryKeyField()
+                    .fieldName,
+                allListMemberIds));
+
+            List allListMembers = await findMembers.execute();
+
+            // now lets move found list members to models lists
+
+            for (var foundInstance in modelsFound) {
+              var foundInstanceId = AnnotationsParser.getPropertyValueForField(
+                  modelPrimaryKeyField, foundInstance);
+
+              List listMemberIdsForFoundModel = listMembersIdByModelId[foundInstanceId];
+              List listMembers = new List.from(allListMembers.where((m) {
+                return listMemberIdsForFoundModel.contains(
+                    orm.getPrimaryKeyValue(m));
+              }));
+
+              AnnotationsParser.setPropertyValueForField(
+                  field, listMembers, foundInstance);
+            }
+          }
         }
       }
     }
 
-    return foundInstances;
+    return modelsFound;
   }
 }
 
