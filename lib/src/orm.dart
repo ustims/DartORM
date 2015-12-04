@@ -169,6 +169,10 @@ Future insert(dynamic model, [DBAdapter adapter = null]) async {
         List listToInsert =
             AnnotationsParser.getPropertyValueForField(f, model);
 
+        if(listToInsert == null) {
+          continue;
+        }
+
         if (joinTable is ListJoinValuesTable) {
           for (var value in listToInsert) {
             Insert referenceInsert = new Insert(joinTable)

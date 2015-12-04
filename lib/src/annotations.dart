@@ -84,14 +84,6 @@ class AnnotationsParser {
                 reflectClass(dbTableAnnotation.annotationTarget);
             ormClasses[MirrorSystem.getName(target.simpleName)] = table;
           }
-
-          // now let's check if table has reference fields. If so, we need
-          // to create additional tables for connecting those references
-          if (table.hasReferenceFields) {
-            for (Field f in table.fields) {
-              if (f is ListJoinField) {}
-            }
-          }
         }
       }
     }
@@ -185,7 +177,16 @@ class AnnotationsParser {
   /// Returns [field] value for provided model [instance]
   static dynamic getPropertyValueForField(Field field, dynamic instance) {
     InstanceMirror mirror = reflect(instance);
-    return mirror.getField(field.constructedFromPropertyName).reflectee;
+
+    try {
+      return mirror
+          .getField(field.constructedFromPropertyName)
+          .reflectee;
+    } on NoSuchMethodError catch(e) {
+      throw new StateError('Failed to get property value for ORM field. ' +
+          'Usually this means that you use separate annotation class ' +
+          'and forgot to add a property to original class.');
+    }
   }
 
   /// Allows setting [field]'s [value] on provided object instance.
