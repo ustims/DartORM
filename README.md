@@ -4,6 +4,8 @@
 Dart ORM
 ========
 
+[![Join the chat at https://gitter.im/ustims/DartORM](https://badges.gitter.im/ustims/DartORM.svg)](https://gitter.im/ustims/DartORM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Easy-to-use and easy-to-setup database ORM for dart.
 
 It is in the very beginning stage of development and not ready for production use.
