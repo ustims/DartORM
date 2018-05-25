@@ -125,7 +125,7 @@ Future dateTimeTestCase() async {
 
   User futureUser = new User()
     ..givenName = 'Bilbo'
-    ..created = new DateTime(2500, DateTime.JANUARY, 1, 12, 12, 12);
+    ..created = new DateTime(2500, DateTime.january, 1, 12, 12, 12);
   await futureUser.save();
 
   // TODO: timezones need to be tested.

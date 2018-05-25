@@ -117,7 +117,7 @@ class Join {
   Join(this.joinType, this.tableName, this.tableAlias, this.joinCondition);
 }
 
-class Select extends SQL {
+class Select {
   final Map<String, String> sorts = new Map<String, String>();
   final List<Join> joins = new List<Join>();
 

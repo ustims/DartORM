@@ -1,55 +1,31 @@
 library dart_orm.mongodb_integration_test;
 
+import 'dart:io';
+
 import 'package:dart_orm_adapter_mongodb/dart_orm_adapter_mongodb.dart';
 import 'package:logging/logging.dart';
+import 'package:mongo_dart/mongo_dart.dart';
 import 'package:test/test.dart';
 
-import 'test_util.dart';
 import 'integration/test_integration.dart';
 
 const String dbUserName = 'dart_orm_test';
 const String dbName = 'dart_orm_test';
 
-void setupDBs() {
+void setupDBs(String dbString) async {
   // mongodb teardown
-  run('mongo', [
-    '$dbName',
-    '--eval',
-    """
-  db.runCommand( { dropAllUsersFromDatabase: 1, writeConcern: { w: "majority" } } );
-  db.dropDatabase();
-  """
-  ]);
-
-  log.info('---- MongoDB Setup -----');
-  // mongodb setup
-  run('mongo', [
-    '$dbName',
-    '--eval',
-    """
-  if (db.version().toString().indexOf('2.4') > -1) {
-      db.addUser(
-          {
-              user: "$dbUserName",
-              pwd: "$dbUserName",
-              roles: ["readWrite"]
-          }
-      );
-  } else {
-      db.createUser(
-          {
-              user: "$dbUserName",
-              pwd: "$dbUserName",
-              roles: [{role: "userAdmin", db: "$dbName"}]
-          }
-      );
-  }
-  """
-  ]);
+  var db = new Db('mongodb://$dbString/dart_orm_test');
+  await db.open();
+  await db.drop();
+  await db.close();
 }
 
 void main() {
-  setUpAll(() {
+  var useDocker = Platform.environment['USE_DOCKER'] == 'true';
+
+  var dbString = useDocker ? 'mongo:27017': 'localhost:27000';
+
+  setUpAll(() async {
     Logger.root.level = Level.FINEST;
     Logger.root.onRecord.listen((LogRecord rec) {
       if (rec.loggerName.contains('DartORM')) {
@@ -58,11 +34,11 @@ void main() {
       }
     });
 
-    setupDBs();
+    await setupDBs(dbString);
   });
 
   MongoDBAdapter mongoAdapter = new MongoDBAdapter(
-      'mongodb://dart_orm_test:dart_orm_test@127.0.0.1/dart_orm_test');
+      'mongodb://$dbString/dart_orm_test');
 
   registerTestsForAdapter('mongodb', mongoAdapter);
 
