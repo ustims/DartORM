@@ -6,6 +6,21 @@ author: Ustimenko Sergey <ustims@gmail.com>
 homepage: https://github.com/ustims/DartORM
 dev_dependencies:
   test: '^0.12.5'
-  dart_orm_adapter_postgresql: '^0.1.0'
-  dart_orm_adapter_mongodb: '^0.1.3'
-  dart_orm_adapter_mysql: '^0.1.4'
+#  dart_orm_adapter_postgresql: '^0.1.0'
+  dart_orm_adapter_postgresql:
+#    path: ../DartORM-PostgreSQL
+    git:
+      url: https://github.com/DartOrm/DartORM-PostgreSQL
+      ref: upgrade-libraries
+#  dart_orm_adapter_mongodb: '^0.1.3'
+  dart_orm_adapter_mongodb:
+#    path: ../DartORM-MongoDB
+    git:
+      url: https://github.com/DartOrm/DartORM-MongoDB
+      ref: upgrade-libraries
+#  dart_orm_adapter_mysql: '^0.1.4'
+  dart_orm_adapter_mysql:
+#    path: ../DartORM-MySQL
+    git:
+      url: https://github.com/DartOrm/DartORM-MySQL
+      ref: upgrade-libraries

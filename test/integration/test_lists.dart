@@ -1,4 +1,4 @@
-library dart_orm.test_basic_integration;
+library dart_orm.test_lists;
 
 import 'dart:async';
 

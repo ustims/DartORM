@@ -1,20 +1,9 @@
-language: dart
-dart:
-  - stable
-  - dev
+sudo: required
+install:
+  - curl -sSL https://get.docker.com/ | sudo sh
+  - sudo pip install docker-compose
 script:
-  - pub global activate dart_coveralls
-  - pub run test/mongodb_integration_test.dart
-  - pub run test/mysql_integration_test.dart
-  - pub run test/postgres_integration_test.dart
-  - dart_coveralls calc test/test.dart
-  - dart_coveralls report --exclude-test-files --token=$COVERALLS_TOKEN test/test.dart
-before_script:
-  - psql -c 'create database dart_orm;' -U postgres
-services:
-  - mongodb
-env:
-  global:
-    - MYSQL_USER=root
-    - PSQL_USER=postgres
-    - PSQL_DB=dart_orm
+  - docker-compose build
+  - docker-compose up -d mysql mongo postgres
+  - sleep 2m
+  - docker-compose run --rm test

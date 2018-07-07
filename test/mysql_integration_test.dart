@@ -4,39 +4,33 @@ import 'dart:io';
 
 import 'package:dart_orm_adapter_mysql/dart_orm_adapter_mysql.dart';
 import 'package:logging/logging.dart';
+import 'package:sqljocky5/sqljocky.dart';
 import 'package:test/test.dart';
 
-import 'test_util.dart';
 import 'integration/test_integration.dart';
 
 const String dbUserName = 'dart_orm_test';
 const String dbName = 'dart_orm_test';
 
-void setupMySql(mysqlUser) {
-  void runMySql(String command) {
-    run('mysql', ['-e', command, '-v', '-u', mysqlUser]);
+void setupMySql(String dbString) async {
+  var dbStringParts = dbString.split(':');
+  var pool = new ConnectionPool(
+      host: dbStringParts[0], port: int.parse(dbStringParts[1]),
+      user: 'dart_orm_test', password: 'dart_orm_test',
+      db: 'dart_orm_test', max: 5);
+
+  var rows = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'dart_orm_test'");
+  await for(var row in rows) {
+    await pool.query('DROP TABLE IF EXISTS ${row[0]} CASCADE');
   }
-
-  log.info('---- MySQL Teardown -----');
-  runMySql('DROP DATABASE $dbName;');
-  runMySql('DROP USER \'$dbUserName\'@\'localhost\';');
-
-  log.info('---- MySQL Setup -----');
-  runMySql('CREATE DATABASE $dbName;');
-  runMySql(
-      'CREATE USER \'$dbUserName\'@\'localhost\' IDENTIFIED BY \'$dbUserName\';');
-  runMySql('GRANT ALL ON $dbName.* TO \'$dbUserName\'@\'localhost\';');
-  runMySql('FLUSH PRIVILEGES;');
 }
 
 void main() {
-  setUpAll(() {
-    String MYSQL_USER = Platform.environment['MYSQL_USER'];
+  var useDocker = Platform.environment['USE_DOCKER'] == 'true';
 
-    if (MYSQL_USER == null || MYSQL_USER.isEmpty) {
-      throw 'MYSQL_USER must be set in the environment';
-    }
+  var dbString = useDocker ? 'mysql:3306': 'localhost:3000';
 
+  setUpAll(() async {
     Logger.root.level = Level.FINEST;
     Logger.root.onRecord.listen((LogRecord rec) {
       if (rec.loggerName.contains('DartORM')) {
@@ -45,11 +39,11 @@ void main() {
       }
     });
 
-    setupMySql(MYSQL_USER);
+    await setupMySql(dbString);
   });
 
   MySQLDBAdapter mysqlAdapter = new MySQLDBAdapter(
-      'mysql://dart_orm_test:dart_orm_test@localhost:3306/dart_orm_test');
+      'mysql://dart_orm_test:dart_orm_test@$dbString/dart_orm_test');
 
   registerTestsForAdapter('mysql', mysqlAdapter);
 
